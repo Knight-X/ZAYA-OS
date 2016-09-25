@@ -1,10 +1,10 @@
 /*******************************************************************************
  *
- * @file Drv_CPUCore.h
+ * @file DRVConfig.h
  *
  * @author Murat Cakmak
  *
- * @brief CPU Core Driver Interface
+ * @brief Project Specific Driver Layer Configurations
  *
  * @see https://github.com/P-LATFORM/P-OS/wiki
  *
@@ -12,7 +12,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 P-OS
+ * Copyright (c) 2016 Platform
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,76 +33,17 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef __DRV_CPUCORE_H
-#define __DRV_CPUCORE_H
+#ifndef __DRV_CONFIG_H
+#define __DRV_CONFIG_H
 
 /********************************* INCLUDES ***********************************/
 #include "postypes.h"
-
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
-typedef void(*Drv_CPUCore_TaskStartPoint)(void* arg);
-
-/*************************** FUNCTION DEFINITIONS *****************************/
-/**
-* Initializes actual CPU and its components/peripherals.
-*
-* @param none
-* @return none
-*/
-void Drv_CPUCore_Init(void);
-
 /*
- * Halts all system.
- *
- * @param none
- * @return none
- *
+ * Used HW Timer count in that projects.
  */
-void Drv_CPUCore_Halt(void);
+#define DRV_CONFIG_NUM_OF_USED_HW_TIMERS				(2)
 
-/*
- * Starts Context Switching
- *  Configures HW for CS and starts first task
- *
- * @param initialTCB Initial (First) TCB (Task) for Context Switching
- *
- * @return none
- */
-void Drv_CPUCore_CSStart(reg32_t* initialTCB);
-
-/*
- * Switches running task to provided new TCB
- *
- * @param newTCB to be switched TCB
- *
- * @return none
- *
- */
-void Drv_CPUCore_CSYieldTo(reg32_t* newTCB);
-
-/*
- * Initializes task stack
- *
- * @param stack to be initialized task stack
- * @param stackSize Stack Size
- * @param taskStartPoint Start Point (Function) of Task
- *
- * @return top of stack after initialization. 
- *		   [IMP] Caller should keep top of stack address for new context switches.
- */
-reg32_t* Drv_CPUCore_CSInitializeTaskStack(uint8_t* stack, uint32_t stackSize,
-										   Drv_CPUCore_TaskStartPoint startPoint);
-
-/*
- * Jumps to other image on system.
- * It is used to pass control from Bootloader to Application (e.g. Firmware)
- *
- * @param image image address of Application in memory.
- *
- * @return none
- */
-void Drv_CPUCore_JumpToImage(reg32_t imageAddress);
-
-#endif	/* __DRV_CPUCORE_H */
+#endif	/* __DRV_CONFIG_H */

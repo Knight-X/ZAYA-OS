@@ -63,7 +63,8 @@ $(PROJECT_PATHS):
 	@echo "\n=================================================================="
 	@echo ">> Project $(lastword $(subst /, ,$@)) is compiling\n"
 # We already have a makefile which builds Projects so let's just call make file with required argument (to be built project name path)
-	$(MAKE) -f $(MAKE_FILES_PATH)/build_project.mk PROJECT=$(lastword $(subst /, ,$@))
+
+	#$(MAKE) -f $(MAKE_FILES_PATH)/build_project.mk PROJECT=$(lastword $(subst /, ,$@))
 .PHONY: $(PROJECT_PATHS)
 
 #

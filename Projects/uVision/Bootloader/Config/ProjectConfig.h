@@ -1,10 +1,10 @@
 /*******************************************************************************
 *
-* @file DrvCPUCoreInternal.h
+* @file Project_Config.h
 *
 * @author Murat Cakmak
 *
-* @brief CPU specific Internal Definitions
+* @brief Project Specific Configurations
 *
 * @see https://github.com/P-LATFORM/P-OS/wiki
 *
@@ -12,7 +12,7 @@
 *
 * The MIT License (MIT)
 *
-* Copyright (c) 2016 P-OS
+* Copyright (c) 2016 Platform
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -32,43 +32,19 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 *
-******************************************************************************/
-
-#ifndef __DRV_CPUCORE_INTERNAL_H
-#define __DRV_CPUCORE_INTERNAL_H
+*******************************************************************************/
+#ifndef __PROJECT_CONFIG_H
+#define __PROJECT_CONFIG_H
 
 /********************************* INCLUDES ***********************************/
-#include "postypes.h"
 
 /***************************** MACRO DEFINITIONS ******************************/
 
+/* Debug Assertion */
+#define ENABLE_DEBUG_ASSERT					0
+
 /***************************** TYPE DEFINITIONS *******************************/
 
-/**************************** FUNCTION PROTOTYPES *****************************/
+/*************************** FUNCTION DEFINITIONS *****************************/
 
-/******************************** VARIABLES ***********************************/
-
-
-/*************************** FUNCTION PROTOTYPES *****************************/
-/*
- * Starts Context Switching on CPU.
- *
- * [IMP] To be switched task (currentTCB) must be set before calling this
- * function.
- *
- * @param none
- *
- * @return none
- */
-INTERNAL void StartContextSwitching(void);
-
-/*
- * Jump to specified image.
- *
- * @param imageAddress Image address to jump
- *
- * @return none
- */
-INTERNAL void JumpToImage(reg32_t imageAddress);
-
-#endif /* __DRV_CPUCORE_INTERNAL_H */
+#endif	/* __PROJECT_CONFIG_H */
