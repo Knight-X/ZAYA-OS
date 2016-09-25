@@ -79,4 +79,14 @@ void Drv_CPUCore_CSYieldTo(reg32_t* newTCB);
 reg32_t* Drv_CPUCore_CSInitializeTaskStack(uint8_t* stack, uint32_t stackSize,
 										   Drv_CPUCore_TaskStartPoint startPoint);
 
+/*
+ * Jumps to other image on system.
+ * It is used to pass control from Bootloader to Application (e.g. Firmware)
+ *
+ * @param image image address of Application in memory.
+ *
+ * @return none
+ */
+void Drv_CPUCore_JumpToImage(reg32_t imageAddress);
+
 #endif	/* __DRV_CPUCORE_H */

@@ -5,17 +5,23 @@
  * @author Murat Cakmak (MC)
  *
  * @brief Unit test file for CPU module
+/*******************************************************************************
  *
- * @see https://github.com/P-LATFORM/P-OS/wiki
+ * @file BSPConfig.h
+ *
+ * @author Murat Cakmak (MC)
+ *
+ * @brief Project Specific BSP Configurations
+ *
+ * @see https://github.com/ZA-YA/ZAYA-OS/wiki
  *
  ******************************************************************************
  *
- *  Copyright (2016), P-OS
+ * GNU GPLv2
  *
- *   This software may be modified and distributed under the terms of the
- *   'MIT License'.
+ * Copyright (c) 2016 ZAYA
  *
- *   See the LICENSE file for details.
+ *  See GNU GPLv2 License Details in the Root Directory.
  *
  ******************************************************************************/
 
