@@ -48,12 +48,12 @@ typedef int32_t Drv_TimerHandle;
 typedef void (*Drv_TimerCallback)(void);
 
 /*************************** FUNCTION DEFINITIONS *****************************/
-void Drv_Timer_Init(void);
-Drv_TimerHandle Drv_Timer_Create(Drv_TimerCallback userTimerCB);
-void Drv_Timer_Remove(Drv_TimerHandle timer);
-void Drv_Timer_Start(Drv_TimerHandle timer, uint32_t timeout);
-void Drv_Timer_Stop(Drv_TimerHandle timer, uint32_t timeout);
-void Drv_Timer_DelayUs(uint32_t microseconds);
-void Drv_Timer_DelayMs(uint32_t milliseconds);
+void Drv_UserTimer_Init(void);
+Drv_TimerHandle Drv_UserTimer_Create(Drv_TimerCallback userTimerCB);
+void Drv_UserTimer_Remove(Drv_TimerHandle timer);
+void Drv_UserTimer_Start(Drv_TimerHandle timer, uint32_t timeout);
+void Drv_UserTimer_Stop(Drv_TimerHandle timer, uint32_t timeout);
+void Drv_UserTimer_DelayUs(uint32_t microseconds);
+void Drv_UserTimer_DelayMs(uint32_t milliseconds);
 
 #endif	/* __DRV_USERTIMER_H */

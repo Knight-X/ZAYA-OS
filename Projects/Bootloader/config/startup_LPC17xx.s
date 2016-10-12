@@ -28,7 +28,7 @@
 ;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Stack_Size      EQU     0x00000400
+Stack_Size      EQU     0x00001000
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
 Stack_Mem       SPACE   Stack_Size
@@ -45,8 +45,8 @@ Heap_Size       EQU     0x00000000
 __heap_base
 Heap_Mem        SPACE   Heap_Size
 __heap_limit
-				IMPORT POS_SVC_Handler
-				IMPORT POS_PendSV_Handler
+				;IMPORT POS_SVC_Handler
+				;IMPORT POS_PendSV_Handler
 				IMPORT POS_TIMER0_IRQHandler
 				IMPORT POS_TIMER1_IRQHandler
 				IMPORT POS_TIMER2_IRQHandler
@@ -72,10 +72,12 @@ __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
-                DCD     POS_SVC_Handler               ; SVCall Handler
+;                DCD     POS_SVC_Handler               ; SVCall Handler
+                DCD     SVC_Handler               ; SVCall Handler
                 DCD     DebugMon_Handler          ; Debug Monitor Handler
                 DCD     0                         ; Reserved
-                DCD     POS_PendSV_Handler            ; PendSV Handler
+;                DCD     POS_PendSV_Handler            ; PendSV Handler
+				DCD     PendSV_Handler            ; PendSV Handler
                 DCD     SysTick_Handler           ; SysTick Handler
 
                 ; External Interrupts
@@ -84,6 +86,11 @@ __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     POS_TIMER1_IRQHandler         ; 18: Timer1
                 DCD     POS_TIMER2_IRQHandler         ; 19: Timer2
                 DCD     POS_TIMER3_IRQHandler         ; 20: Timer3
+;                DCD     TIMER0_IRQHandler         ; 17: Timer0
+;                DCD     TIMER1_IRQHandler         ; 18: Timer1
+;                DCD     TIMER2_IRQHandler         ; 19: Timer2
+;                DCD     TIMER3_IRQHandler         ; 20: Timer3
+
                 DCD     UART0_IRQHandler          ; 21: UART0
                 DCD     UART1_IRQHandler          ; 22: UART1
                 DCD     UART2_IRQHandler          ; 23: UART2
