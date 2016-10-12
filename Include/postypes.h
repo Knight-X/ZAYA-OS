@@ -65,8 +65,8 @@
 
 #elif defined(__ARMCC_VERSION)
 
-	#define INLINE                  __inline
-	#define ALWAYS_INLINE           __forceinline
+	#define INLINE                  //__inline
+	#define ALWAYS_INLINE           //__forceinline
 	#define ASSEMBLY_FUNCTION       __asm
 	#define PACKED					__packed
     #define TYPEDEF_STRUCT_PACKED	PACKED typedef struct
@@ -103,14 +103,6 @@
 
 #ifndef SUPER_LOOP
 #define SUPER_LOOP ENDLESS_WHILE_LOOP
-#endif
-
-#ifndef BOOL_TRUE
-#define BOOL_TRUE		(1)
-#endif
-
-#ifndef BOOL_FALSE
-#define BOOL_FALSE		(0)
 #endif
 
 #ifndef MATH_MIN

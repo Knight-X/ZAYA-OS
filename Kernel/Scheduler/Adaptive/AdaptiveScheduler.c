@@ -312,10 +312,10 @@ PRIVATE ALWAYS_INLINE void RunRegulator(void)
                           (int32_t)( (AS_KRR * errRound) - (AS_KRR * AS_ZRR * state->errRoundOld));
 
         /* Apply Saturations */
-		if (scheduler.flags.allReadyTasksSaturated == BOOL_TRUE)
+		if (scheduler.flags.allReadyTasksSaturated == true)
         {
             /* Clear flag first */
-            scheduler.flags.allReadyTasksSaturated = BOOL_FALSE;
+            scheduler.flags.allReadyTasksSaturated = false;
 
             /*
              * Miosix Note : If all inner regulators reached upper saturation,
@@ -432,7 +432,7 @@ PRIVATE void FindNextTask(uint32_t setBurstTimer)
     else
     {
         /* Clear IDLE Task flag */
-        scheduler.flags.taskIsIdle = BOOL_FALSE;
+        scheduler.flags.taskIsIdle = false;
     }
 
     /* Start with current task to find next task */
@@ -478,7 +478,7 @@ PRIVATE void FindNextTask(uint32_t setBurstTimer)
                 nextBurstTime = AS_IDLE_THREAD_BURST_IN_US;
 
                 /* Notify about IDLE Task */
-				scheduler.flags.taskIsIdle = BOOL_TRUE;
+				scheduler.flags.taskIsIdle = true;
 
                 /* next task (idle) is found so break to search */
 				break;
@@ -527,7 +527,7 @@ PRIVATE void FindNextTask(uint32_t setBurstTimer)
      * TODO Why do we set time in FindNextTask() function? It can be set in
      *      different place.
      */
-    if (setBurstTimer == BOOL_TRUE)
+    if (setBurstTimer == true)
     {
         SetBurstTimer(nextBurstTime);
     }
@@ -642,7 +642,7 @@ PUBLIC void Scheduler_Init(TCB* tcbList, TCB* idleTCB, SchedulerCSCallback csCal
 PUBLIC void Scheduler_Yield(void)
 {
 	/* First find next task */
-    FindNextTask(BOOL_TRUE);
+    FindNextTask(true);
 
     /* Notify kernel and pass next task (TCB) */
     scheduler.csCallback(scheduler.currentTask->tcb);
@@ -650,7 +650,7 @@ PUBLIC void Scheduler_Yield(void)
 
 PUBLIC TCB* Scheduler_GetNextTCBs(void)
 {
-    FindNextTask(BOOL_TRUE);
+    FindNextTask(true);
 
     return scheduler.currentTask->tcb;
 }

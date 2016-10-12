@@ -6,7 +6,7 @@
  *
  * @brief Project Specific BSP Configurations
  *
- * @see https://github.com/P-LATFORM/P-OS/wiki
+ * @see https://github.com/P-LATFORM/SP-OS/wiki
  *
  ******************************************************************************
  *

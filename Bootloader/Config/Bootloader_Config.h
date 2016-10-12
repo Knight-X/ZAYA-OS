@@ -1,22 +1,23 @@
 /*******************************************************************************
  *
- * @file Bootloader.h
+ * @file Bootloader_Config.h
  *
- * @author MC
+ * @author Murat Cakmak (MC)
  *
- * @brief Bootloader Configurations
+ * @brief Bootloader configurations
  *
- * @see https://github.com/P-LATFORM/SP-OS/wiki
+ *
+ * @see https://github.com/ZA-YA/ZAYA-OS/wiki
  *
  ******************************************************************************
  *
- * GNU GPLv3
+ * GNU GPLv2
  *
- * Copyright (c) 2016 SP
+ * Copyright (c) 2016 ZAYA
  *
- *  See LICENSE file in Root Directory for license details.
+ *  See GNU GPLv2 License Details in the Root Directory.
  *
- *******************************************************************************/
+ ******************************************************************************/
 #ifndef __BOOTLOADER_CONFIG_H
 #define __BOOTLOADER_CONFIG_H
 

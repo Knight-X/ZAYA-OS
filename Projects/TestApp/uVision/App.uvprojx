@@ -7,10 +7,10 @@
 
   <Targets>
     <Target>
-      <TargetName>HelloWorld</TargetName>
+      <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
+      <pCCUsed>5060183::V5.06 update 2 (build 183)::ARMCC</pCCUsed>
       <TargetOption>
         <TargetCommonOption>
           <Device>LPC1768</Device>
@@ -48,10 +48,10 @@
             <InvalidFlash>1</InvalidFlash>
           </TargetStatus>
           <OutputDirectory>.\Objects\</OutputDirectory>
-          <OutputName>hello_world</OutputName>
+          <OutputName>App</OutputName>
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
-          <CreateHexFile>0</CreateHexFile>
+          <CreateHexFile>1</CreateHexFile>
           <DebugInformation>1</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
           <ListingPath>.\Listings\</ListingPath>
@@ -79,9 +79,9 @@
             <nStopB2X>0</nStopB2X>
           </BeforeMake>
           <AfterMake>
-            <RunUserProg1>0</RunUserProg1>
+            <RunUserProg1>1</RunUserProg1>
             <RunUserProg2>0</RunUserProg2>
-            <UserProg1Name></UserProg1Name>
+            <UserProg1Name>C:\Keil_v5\ARM\ARMCC\bin\fromelf.exe --bin --output=App.bin C:\Users\murat\Documents\Dev\Trivial\SPBootloader\Projects\TestApp\uVision\Objects\App.axf</UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
             <UserProg2Dos16Mode>0</UserProg2Dos16Mode>
@@ -186,7 +186,7 @@
             <hadIRAM2>1</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
-            <useUlib>1</useUlib>
+            <useUlib>0</useUlib>
             <EndSel>0</EndSel>
             <uLtcg>0</uLtcg>
             <nSecure>0</nSecure>
@@ -272,8 +272,8 @@
               </OCR_RVCT3>
               <OCR_RVCT4>
                 <Type>1</Type>
-                <StartAddress>0x0</StartAddress>
-                <Size>0x80000</Size>
+                <StartAddress>0x10200</StartAddress>
+                <Size>0x6fe00</Size>
               </OCR_RVCT4>
               <OCR_RVCT5>
                 <Type>1</Type>
@@ -330,12 +330,11 @@
             <vShortWch>1</vShortWch>
             <v6Lto>0</v6Lto>
             <v6WtE>0</v6WtE>
-            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>BOARD_ENABLE_LED_INTERFACE=1, UVISION_PROJECT</Define>
+              <Define></Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\..\Include;..\..\..\Include\BSP;..\..\..\BSP;..\..\..\BSP\CPU\LPC1768\internal;..\..\..\Kernel;..\..\..\Kernel\Scheduler;..\..\..\Environment\Tools\Debug;..\Config</IncludePath>
+              <IncludePath>..\..\..\BSP\CPU\LPC1768\internal;..\..\..\BSP\Board\LandTiger;..\..\..\BSP\CPU\LPC1768;..\..\..\Include;..\..\..\Include\BSP;..\..\..\Bootloader;..\config</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -348,7 +347,6 @@
             <NoWarn>0</NoWarn>
             <uSurpInc>0</uSurpInc>
             <useXO>0</useXO>
-            <uClangAs>0</uClangAs>
             <VariousControls>
               <MiscControls></MiscControls>
               <Define></Define>
@@ -357,13 +355,13 @@
             </VariousControls>
           </Aads>
           <LDads>
-            <umfTarg>0</umfTarg>
+            <umfTarg>1</umfTarg>
             <Ropi>0</Ropi>
             <Rwpi>0</Rwpi>
             <noStLib>0</noStLib>
             <RepFail>1</RepFail>
             <useFile>0</useFile>
-            <TextAddressRange>0x00000000</TextAddressRange>
+            <TextAddressRange>0x1000</TextAddressRange>
             <DataAddressRange>0x10000000</DataAddressRange>
             <pXoBase></pXoBase>
             <ScatterFile></ScatterFile>
@@ -385,14 +383,9 @@
               <FilePath>..\..\..\BSP\CPU\LPC1768\internal\system_LPC17xx.c</FilePath>
             </File>
             <File>
-              <FileName>Drv_CPUCore.c</FileName>
+              <FileName>Drv_LED.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\..\..\BSP\CPU\LPC1768\Drv_CPUCore.c</FilePath>
-            </File>
-            <File>
-              <FileName>Drv_CPUCore_Assembly.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\BSP\CPU\LPC1768\Drv_CPUCore_Assembly.c</FilePath>
+              <FilePath>..\..\..\BSP\Board\LandTiger\Drv_LED.c</FilePath>
             </File>
             <File>
               <FileName>Drv_GPIO.c</FileName>
@@ -400,64 +393,14 @@
               <FilePath>..\..\..\BSP\CPU\LPC1768\Drv_GPIO.c</FilePath>
             </File>
             <File>
-              <FileName>Drv_LED.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\BSP\Board\LandTiger\Drv_LED.c</FilePath>
-            </File>
-            <File>
-              <FileName>Drv_Timer.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\BSP\CPU\LPC1768\Drv_Timer.c</FilePath>
-            </File>
-            <File>
               <FileName>startup_LPC17xx.s</FileName>
               <FileType>2</FileType>
-              <FilePath>..\Config\startup_LPC17xx.s</FilePath>
+              <FilePath>..\config\startup_LPC17xx.s</FilePath>
             </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>OS</GroupName>
-          <Files>
-            <File>
-              <FileName>Kernel.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Kernel\Kernel.c</FilePath>
-            </File>
-            <File>
-              <FileName>AdaptiveScheduler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Kernel\Scheduler\Adaptive\AdaptiveScheduler.c</FilePath>
-            </File>
-            <File>
-              <FileName>Kernel_Internal.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Kernel\Kernel_Internal.h</FilePath>
-            </File>
-            <File>
-              <FileName>Kernel.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Kernel\Kernel.h</FilePath>
-            </File>
-            <File>
-              <FileName>Scheduler.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\..\..\Kernel\Scheduler\Scheduler.h</FilePath>
-            </File>
-            <File>
-              <FileName>CooparativeScheduler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Kernel\Scheduler\Cooparative\CooparativeScheduler.c</FilePath>
-            </File>
-            <File>
-              <FileName>OSConfig.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\Config\OSConfig.h</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Projects</GroupName>
+          <GroupName>App</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>

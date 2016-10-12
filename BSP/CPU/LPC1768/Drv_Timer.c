@@ -399,6 +399,11 @@ PUBLIC TimerHandle Drv_Timer_Create(TimerNo timerNo, DrvTimerPriority priority, 
 	return (TimerHandle)timer;
 }
 
+void Drv_Timer_Release(TimerHandle timer)
+{
+
+}
+
 /*
  * Starts a Timer.
  *
