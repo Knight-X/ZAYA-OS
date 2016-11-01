@@ -6,19 +6,17 @@
 #
 # @brief Configurations and definitions for x86 Environment
 #
-# @see https://github.com/P-LATFORM/P-OS/wiki
-#		REFERENCE http://mcufreaks.blogspot.com.tr/2013/03/customizable-makefile-for-gcc-arm.html
+# @see https://github.com/ZA-YA/ZAYA-OS/wiki
 #
 #*****************************************************************************
 #
-#  Copyright (2016), P-OS
+# GNU GPLv2
 #
-#   This software may be modified and distributed under the terms of the
-#   'MIT License'.
+# Copyright (c) 2016 ZAYA
 #
-#   See the LICENSE file for details.
+#  See GNU GPLv2 License Details in the Root Directory.
 #
-################################################################################
+#*****************************************************************************/
 
 ################################################################################
 #							GNU GCC

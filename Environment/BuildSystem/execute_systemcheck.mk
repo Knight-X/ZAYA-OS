@@ -4,24 +4,23 @@
 #
 # @author Murat Cakmak
 #
-# @brief Checks all P-OS ecosystem stability
+# @brief Checks all ZAYA-OS ecosystem stability
 #			
 #			- Builds all projects
 #			- Runs all unit tests, unit analysis and sanity checks 
 #			- TODO : Runs all integration
-#	
-# @see https://github.com/P-LATFORM/P-OS/wiki
+#
+# @see https://github.com/ZA-YA/ZAYA-OS/wiki
 #
 #*****************************************************************************
 #
-#  Copyright (2016), P-OS
+# GNU GPLv2
 #
-#   This software may be modified and distributed under the terms of the
-#   'MIT License'.
+# Copyright (c) 2016 ZAYA
 #
-#   See the LICENSE file for details.
+#  See GNU GPLv2 License Details in the Root Directory.
 #
-################################################################################
+#*****************************************************************************/
 
 # Path which includes all makefiles
 MAKE_FILES_PATH = Environment/BuildSystem

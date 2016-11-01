@@ -2,20 +2,19 @@
  *
  * @file postypes.h
  *
- * @author Murat Cakmak
+ * @author Murat Cakmak (MC)
  *
- * @brief P-OS Specific Type Definitions which extend standart types
+ * @brief ZAYA-OS Specific Type Definitions which extend standard types
  *
- * @see https://github.com/P-LATFORM/P-OS/wiki
+ * @see https://github.com/ZA-YA/ZAYA-OS/wiki
  *
  ******************************************************************************
  *
- *  Copyright (2016), P-OS
+ * GNU GPLv2
  *
- *   This software may be modified and distributed under the terms of the
- *   'MIT License'.
+ * Copyright (c) 2016 ZAYA
  *
- *   See the LICENSE file for details.
+ *  See GNU GPLv2 License Details in the Root Directory.
  *
  ******************************************************************************/
 

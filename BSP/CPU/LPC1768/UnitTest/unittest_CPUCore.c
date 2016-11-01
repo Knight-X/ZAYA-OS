@@ -1,8 +1,8 @@
 /*******************************************************************************
  *
- * @file CPU_UnitTest.c
+ * @file unittest_CPUCore.c
  *
- * @author Murat Cakmak
+ * @author Murat Cakmak (MC)
  *
  * @brief Unit test file for CPU module
  *
