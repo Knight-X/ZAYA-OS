@@ -425,11 +425,6 @@
               <FilePath>..\..\..\Kernel\Kernel.c</FilePath>
             </File>
             <File>
-              <FileName>AdaptiveScheduler.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\..\..\Kernel\Scheduler\Adaptive\AdaptiveScheduler.c</FilePath>
-            </File>
-            <File>
               <FileName>Kernel_Internal.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\..\..\Kernel\Kernel_Internal.h</FilePath>
