@@ -26,7 +26,11 @@
 #
 # C Compiler for x86 : GCC
 #
+ifeq ($(OS),Windows_NT)
+GCC_BIN  =
+else
 GCC_BIN  = /usr/bin/
+endif
 GCC_LIB  = $(GCC_BASE)arm-none-eabi/lib/
 GCC_INC  = $(GCC_BASE)arm-none-eabi/include/
 AS       = $(GCC_BIN)arm-none-eabi-as
