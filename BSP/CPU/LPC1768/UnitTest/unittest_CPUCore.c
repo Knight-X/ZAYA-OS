@@ -107,6 +107,12 @@ void taskStartPoint(void* arg)
 	(void)arg;
 }
 
+TCB* GetNextTCB(void)
+{
+	static TCB tcb;
+	return &tcb;
+}
+
 /***************************** TEST FUNCTIONS *******************************/
 
 /*
@@ -145,13 +151,12 @@ void test_CPU_Halt(void)
 void test_CPU_CS_Start(void)
 {
 	/* Content of This TCB is not important for us. */
-	static reg32_t initialTCB;
+	static TCB initialTCB;
 
-	Drv_CPUCore_CSStart(&initialTCB);
+	Drv_CPUCore_CSStart(&initialTCB, GetNextTCB);
 
 	/* Check for internal global variables which keep next task (TCB)*/
 	TEST_ASSERT((currentTCB == &initialTCB));
-	TEST_ASSERT((nextTCB == &initialTCB));
 
 	/* Interrupts must be enable after that CS_Start function */
 	TEST_ASSERT((lpcMockObjects.flags.interrupt_disabled == 0));
@@ -168,19 +173,10 @@ void test_CPU_CS_Start(void)
  */
 void test_CPU_CS_YieldTo(void)
 {
-	/* Content of This TCB is not important for us. */
-	static reg32_t newTCB;
-
-	Drv_CPUCore_CSYieldTo(&newTCB);
+	Drv_CPUCore_CSYield();
 
 	/* provided TCB should be kept in nextTCB object for next context switching */
-	TEST_ASSERT((nextTCB == &newTCB));
-
-	/*
-	 * After Yield request, CS_YieldTo function should call PendSV handler and
-	 * PendSV Handler should set current task using next Task
-	 */
-	TEST_ASSERT((currentTCB == &newTCB));
+	TEST_ASSERT(SCB->ICSR == (reg32_t)SCB_ICSR_PENDSVSET_Msk);
 }
 
 /*
@@ -190,16 +186,16 @@ void test_CPU_CS_InitializeTaskStack(void)
 {
 	/* 32 Depth should be enough for initialized stack area */
 	reg32_t testStack[32];
-	reg32_t* topOfStack;
 	StackMap* stackMap;
+	TCB tcb;
 
-	topOfStack = Drv_CPUCore_CSInitializeTaskStack((uint8_t*)testStack, sizeof(testStack), taskStartPoint);
+	tcb.topOfStack = Drv_CPUCore_CSInitializeTCB((uint8_t*)testStack, sizeof(testStack), taskStartPoint);
 
 	/* Cast Stack to Stack Map to access fields easy */
-	stackMap = (StackMap*)topOfStack;
+	stackMap = (StackMap*)tcb.topOfStack;
 
 	/* Check Address Alignment first. Address should be multiple of 8 */
-	TEST_ASSERT((((uintptr_t)topOfStack) & 0x7) == 0);
+	TEST_ASSERT((((uintptr_t)tcb.topOfStack) & 0x7) == 0);
 
 	/* Check Program Status Register (PSR) */
 	TEST_ASSERT(stackMap->PSR == TASK_INITIAL_PSR);
@@ -232,10 +228,10 @@ void test_CPU_CS_StackAlignmentTest(void)
 {
 	/* 32 Depth should be enough for initialized stack area */
 	reg32_t testStack[32];
-	reg32_t* topOfStack;
 	int32_t i;
 	uint8_t* stackStartAddr;
 	uint32_t stackSize;
+	TCB tcb;
 
 	/*
 	 * Address of Top of Stack should be aligned with 8 so trying sequential 8
@@ -249,9 +245,9 @@ void test_CPU_CS_StackAlignmentTest(void)
 		stackSize = sizeof(testStack) - i;
 
 		/* Give a raw and get top of initialized stack address */
-		topOfStack = Drv_CPUCore_CSInitializeTaskStack(stackStartAddr, stackSize, taskStartPoint);
+		tcb.topOfStack = Drv_CPUCore_CSInitializeTCB(stackStartAddr, stackSize, taskStartPoint);
 
 		/* Check Address Alignment first. Address should be multiple of 8 */
-		TEST_ASSERT((((uintptr_t)topOfStack) & 0x7) == 0);
+		TEST_ASSERT((((uintptr_t)tcb.topOfStack) & 0x7) == 0);
 	}
 }

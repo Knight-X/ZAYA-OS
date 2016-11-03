@@ -42,11 +42,9 @@
 typedef struct
 {
     /* Task pool for all user tasks */
-    TCB* taskPool;
+    Application* taskPool;
     /* Idle task TCB reference*/
-    TCB* idleTask;
-    /* Kernel callback to inform Kernel core about context switching */
-    SchedulerCSCallback csCallback;
+    Application* idleTask;
     /* Task index to track current task in cooparative scheduling */
     int taskIndex;
 } CooparativeScheduler;
@@ -63,11 +61,10 @@ PRIVATE CooparativeScheduler scheduler;
 /*
  * Initializes Scheduler
  */
-PUBLIC void Scheduler_Init(TCB* tcbList, TCB* idleTCB, SchedulerCSCallback csCallback)
+PUBLIC void Scheduler_Init(Application* appList, Application* idleApp)
 {
-    scheduler.taskPool = tcbList;
-    scheduler.idleTask = idleTCB;
-    scheduler.csCallback = csCallback;
+    scheduler.taskPool = appList;
+    scheduler.idleTask = idleApp;
     scheduler.taskIndex = 0;
 }
 
@@ -76,18 +73,17 @@ PUBLIC void Scheduler_Init(TCB* tcbList, TCB* idleTCB, SchedulerCSCallback csCal
  *
  *  Primitive implementation for Cooparative scheduling.
  */
-PUBLIC void Scheduler_Yield(void)
+PUBLIC Application* Scheduler_GetNextApp(void)
 {
-    TCB* nextTCB;
+    Application* nextApp;
 
     /* Get next (ready) task from task pool */
-    nextTCB = &scheduler.taskPool[scheduler.taskIndex];
+    nextApp = &scheduler.taskPool[scheduler.taskIndex];
 
     /* Calculate task indexx for next yield */
     scheduler.taskIndex = (scheduler.taskIndex + 1) % TASK_COUNT;
 
-    /* Inform kernel about next task */
-    scheduler.csCallback(nextTCB);
+    return nextApp;
 }
 
 #endif /* #if (OS_SCHEDULER == OS_SCHEDULER_COOPARATIVE) */

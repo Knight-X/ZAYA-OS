@@ -28,11 +28,11 @@
 #define DEBUG_LEVEL_WARNING				2
 #define DEBUG_LEVEL_ERROR				3
 
-/* TODO : Define a output for that macro */
-#define DEBUG_PRINT(level, message, ...)
+
 
 #if ENABLE_DEBUG_ASSERT
-
+/* TODO : Define a output for that macro */
+#define DEBUG_PRINT(level, message, ...) //
 	#ifdef WIN32
 
 		#include <assert.h>
