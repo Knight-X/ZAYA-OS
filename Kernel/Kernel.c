@@ -72,28 +72,16 @@ KERNEL_TASK(IdleTask, IdleTaskFunc, IDLE_TASK_STACK_SIZE, IDLE_TASK_PRIORITY);
  * 
  *  Keeps all kernel and user tasks.
  */
-PRIVATE TCB kernelTaskPool[NUM_OF_USER_TASKS];
+PRIVATE Application kernelTaskPool[NUM_OF_USER_TASKS];
 
 /*
  * Task Pool. 
  * 
  *  Keeps all kernel and user tasks. 
  */
-PRIVATE TCB idleTaskTCB;
+PRIVATE Application idleApp;
 
 /**************************** PRIVATE FUNCTIONS ******************************/
-
-/*
- * Context Switching callback.
- *
- *  When a context switching is required, Scheduler notifies Kernel using
- *  this callback.
- */
-PRIVATE void ContextSwitch_Callback(TCB* nextTCB)
-{
-    /* Just switch to next TCB which specified from scheduler */
-    Kernel_SwitchTo((reg32_t*)nextTCB);
-}
 
 /*
  * Idle System Task Code Block 
@@ -113,14 +101,24 @@ PRIVATE KERNEL_TASK_START_POINT(IdleTaskFunc)
  * 
  * @param tcb to be initialized new task (TSB)
  */
-PRIVATE ALWAYS_INLINE void InitializeNewTask(TCB* newTCB)
+PRIVATE ALWAYS_INLINE void InitializeNewTask(Application* app)
 {
-	UserTaskBaseType* userTask = newTCB->userTaskInfo;
+	AppBaseType* userApp = app->info;
     
 	/* Initialize stack of user task according to CPU architecture */
-	newTCB->topOfStack = Kernel_InitializeTaskStack(userTask->stack,
-                                                    userTask->stackSize,
-                                                    userTask->taskStartPoint);
+	app->tcb.topOfStack = Kernel_InitializeTCB(userApp->stack,
+											   userApp->stackSize,
+											   userApp->taskStartPoint);
+}
+
+/**
+ * Provides next TCB for Low Level Context Switching Mechanism.
+ * Kernel registers this function to Driver Layer and when a Context Switching
+ * is occurred, this function is responsible to provide next TCB.
+ */
+PRIVATE TCB* SchedulerGetNextApp(void)
+{
+	return &Scheduler_GetNextApp()->tcb;
 }
 
 /**
@@ -133,7 +131,11 @@ PRIVATE ALWAYS_INLINE void InitializeNewTask(TCB* newTCB)
  */
 PRIVATE ALWAYS_INLINE void StartScheduling(void)
 {
-	Kernel_StartContextSwitching((reg32_t*)&idleTaskTCB);
+	/* Start context switching using
+	 *  - Idle task
+	 *  - TCB provider Callback
+	 */
+	Kernel_StartContextSwitching(&(idleApp.tcb), SchedulerGetNextApp);
 }
 
 /**
@@ -145,8 +147,9 @@ PRIVATE ALWAYS_INLINE void StartScheduling(void)
  */
 PRIVATE ALWAYS_INLINE void InitializeAllTasks(void)
 {
-	TCB* tcb = &kernelTaskPool[0];
+	Application* app = &kernelTaskPool[0];
 	int32_t taskIndex = 0;
+
 	/*
 	 * Each User task creates its type and we collect user tasks in a single
 	 * container (startupApplications) to manage startup applications.
@@ -159,18 +162,18 @@ PRIVATE ALWAYS_INLINE void InitializeAllTasks(void)
     int* appPtr = (int*)startupApplications;
 
 	/* Initialize user tasks */
-    for (taskIndex = 0; taskIndex < NUM_OF_USER_TASKS; taskIndex++, tcb++, appPtr++)
+    for (taskIndex = 0; taskIndex < NUM_OF_USER_TASKS; taskIndex++, app++, appPtr++)
 	{
 		/* Save User Task Info into TCB */
-		tcb->userTaskInfo = (UserTaskBaseType*)*appPtr;
+		app->info = (AppBaseType*)*appPtr;
 
 		/* Initialize New Task */
-        InitializeNewTask(tcb);
+        InitializeNewTask(app);
 	}
 
 	/* Initialize idle task */
-	idleTaskTCB.userTaskInfo = (UserTaskBaseType*)OS_USER_TASK_PREFIX(IdleTask);
-    InitializeNewTask(&idleTaskTCB);
+	idleApp.info = (AppBaseType*)OS_USER_TASK_PREFIX(IdleTask);
+    InitializeNewTask(&idleApp);
 }
 
 /**
@@ -187,7 +190,7 @@ PRIVATE ALWAYS_INLINE void InitializeKernel(void)
 	InitializeAllTasks();
 
 	/* Initialize Scheduler */
-	Scheduler_Init(kernelTaskPool, &idleTaskTCB, ContextSwitch_Callback);
+	Scheduler_Init(kernelTaskPool, &idleApp);
 
 	/* Initialize User Space */
 	OS_InitializeUserSpace();
@@ -202,11 +205,8 @@ PRIVATE ALWAYS_INLINE void InitializeHW(void)
 /***************************** PUBLIC FUNCTIONS *******************************/
 PUBLIC void OS_Yield(void)
 {
-    /*
-     * Just call the Scheduler Yield function, Scheduler also notifies
-     * about next task using callback function.
-     */
-    Scheduler_Yield();
+	/* Just trigger Low Level Yield */
+	Drv_CPUCore_CSYield();
 }
 
 /*

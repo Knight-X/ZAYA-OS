@@ -48,7 +48,7 @@
  ******************************************************************************/
 
 /********************************* INCLUDES ***********************************/
-
+#include "Drv_CPUCore.h"
 #include "Drv_CPUCore_Internal.h"
 #include "postypes.h"
 
@@ -69,54 +69,66 @@
 
 /**************************** FUNCTION PROTOTYPES *****************************/
 
+extern Drv_CPUCore_CSGetNextTCBCallback GetNextTCBCallBack;
 /******************************** VARIABLES ***********************************/
 
+extern TCB* currentTCB;
 /***************************** PRIVATE FUNCTIONS ******************************/
 
 /***************************** PUBLIC FUNCTIONS *******************************/
 
 #if defined(__ARMCC_VERSION) /* ARMCC Assembly Area */
 
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION reg32_t GetPSP(void)
+{
+    MRS r0, psp
+    BX lr
+}
+
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP)
+{
+    MSR psp, r0
+    BX lr
+}
+
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void)
+{
+    MRS r0, psp
+    STMDB r0!, {r4-r11}
+    MSR psp, r0
+    BX lr
+}
+
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void)
+{
+    MRS r0, psp
+    LDMFD r0!, {r4-r11}
+    MSR psp, r0
+    BX lr
+}
+
 /*
- * ISR for PendSV Exception
+ * ISR for PendSV IRQ
  *
  *  We use PendSV Interrupts for Context Switching
  *
- * Implementation copied from FreeRTOS
  */
-ASSEMBLY_FUNCTION void POS_PendSV_Handler( void )
+void POS_PendSV_Handler(void)
 {
-	extern currentTCB;
-	extern SwitchContext;
+	/* First, We need to store register to current process stack (PSP) */
+	StoreRegisterToPSP();
 
-	PRESERVE8
+	/* Get Stack address of current process */
+	currentTCB->topOfStack = (reg32_t*)GetPSP();
 
-	mrs r0, psp
-	isb
+	/* Get next TCB from Upper Layer (e.g. Kernel) */
+	currentTCB = GetNextTCBCallBack();
 
-	ldr	r3, =currentTCB			/* Get the location of the current TCB. */
-	ldr	r2, [r3]
+	/* Set process stack (PSP) to new application stack */
+	SetPSP((reg32_t)currentTCB->topOfStack);
 
-	stmdb r0!, {r4-r11}			/* Save the remaining registers. */
-	str r0, [r2]				/* Save the new top of stack into the first member of the TCB. */
-
-	stmdb sp!, {r3, r14}
-	mov r0, #MAX_SYSCALL_INTERRUPT_PRIORITY
-	msr basepri, r0
-	dsb
-	isb
-	bl SwitchContext
-	mov r0, #0
-	msr basepri, r0
-	ldmia sp!, {r3, r14}
-
-	ldr r1, [r3]
-	ldr r0, [r1]				/* The first item in currentTCB is the task top of stack. */
-	ldmia r0!, {r4-r11}			/* Pop the registers and the critical nesting count. */
-	msr psp, r0
-	isb
-	bx r14
-	nop
+	/* Load registers using new application registers which already kept in its stack */
+	LoadRegisterFromPSP();
 }
 
 /*

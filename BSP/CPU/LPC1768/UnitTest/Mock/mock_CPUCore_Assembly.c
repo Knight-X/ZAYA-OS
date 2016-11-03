@@ -44,7 +44,6 @@
 /***************************** TYPE DEFINITIONS *******************************/
 
 /**************************** FUNCTION PROTOTYPES *****************************/
-extern void SwitchContext(void);
 
 /******************************** VARIABLES ***********************************/
 
@@ -54,8 +53,6 @@ extern void SwitchContext(void);
  */
 void POS_PendSV_Handler(void)
 {
-	/* PendSV ISR normally calls SwitchContext() function to get next TCB */
-	SwitchContext();
 }
 
 /*
@@ -82,4 +79,8 @@ void StartContextSwitching(void)
 void JumpToImage(uint32_t imageAddress)
 {
 	(void)imageAddress;
+}
+
+void SystemInit(void)
+{
 }

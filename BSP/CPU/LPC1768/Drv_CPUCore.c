@@ -103,6 +103,8 @@ TYPEDEF_STRUCT_PACKED
 
 /**************************** FUNCTION PROTOTYPES *****************************/
 
+extern void SystemInit(void);
+
 /******************************** VARIABLES ***********************************/
 
 /*
@@ -111,30 +113,14 @@ TYPEDEF_STRUCT_PACKED
  * This variable is marked as internal because Assembly functions which located at different
  * files use this variable for context switching.
  */
-INTERNAL reg32_t* currentTCB;
+INTERNAL TCB* currentTCB;
 
 /*
- * To be switched next task.
- * When a context switch occurs, currentTCB is replaced with this TCB
+ * Callback to get next TCB from Upper Layer (e.g. Kernel)
  */
-PRIVATE reg32_t* nextTCB;
+INTERNAL Drv_CPUCore_CSGetNextTCBCallback GetNextTCBCallBack;
 
 /**************************** PRIVATE FUNCTIONS ******************************/
-
-/*
- * Switches Context from Running to Next (Selected) Task
- *
- * This function is marked as Internal because Assembly functions which located
- * at different files use this variable for context switching.
- */
-INTERNAL void SwitchContext(void)
-{
-    /* TODO allow context switch if scheduler suspended */
-    
-    /* TODO Check for stack overflow */
-    
-	currentTCB = nextTCB;
-}
 
 /*
  *  A task must not exit or return to its caller. If so break all execution. 
@@ -153,12 +139,8 @@ PRIVATE void ErrorOnTaskExit(void)
  */
 void Drv_CPUCore_Init(void)
 {
-	/*
-	 * TODO Implement Core Initialization.
-	 *
-	 * Currently Core initialization done by System_Init function before
-	 * main() function. We can move it here for coding consistency.
-	 */
+	/* Initialize System (Clocks, peripherals etc.) first */
+	SystemInit();
 }
 
 /*
@@ -205,11 +187,12 @@ void Drv_CPUCore_DisableInterrupts(void)
  *
  * @return none
  */
-void Drv_CPUCore_CSStart(reg32_t* initialTCB)
+void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNextTCB)
 {
+	GetNextTCBCallBack = getNextTCB;
+
 	/* For the first time let's assign current and next task using initial TCB */
     currentTCB = initialTCB;
-	nextTCB = initialTCB;
     
 	/* Disable interrupts to avoid any interruption during Context Switching Initialization */
 	__disable_irq();
@@ -235,11 +218,8 @@ void Drv_CPUCore_CSStart(reg32_t* initialTCB)
  * @param none
  * 
  */
-void Drv_CPUCore_CSYieldTo(reg32_t* newTCB)
+void Drv_CPUCore_CSYield(void)
 {
-	/* Save TCB for task switching */
-    nextTCB = newTCB;
-    
 	/* Set a PendSV to request a context switch. */
     SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
 	
@@ -259,9 +239,8 @@ void Drv_CPUCore_CSYieldTo(reg32_t* newTCB)
  *
  * @return top of stack after initialization. 
  */
-PUBLIC reg32_t* Drv_CPUCore_CSInitializeTaskStack(uint8_t* stack, uint32_t stackSize, Drv_CPUCore_TaskStartPoint taskStartPoint)
+PUBLIC reg32_t* Drv_CPUCore_CSInitializeTCB(uint8_t* stack, uint32_t stackSize, Drv_CPUCore_TaskStartPoint taskStartPoint)
 {
-
 	reg32_t* topOfStack = (reg32_t*)stack;
 	uint32_t stackDepth = stackSize / sizeof(int);
 	TaskStackMap* stackMap;
@@ -297,7 +276,12 @@ PUBLIC reg32_t* Drv_CPUCore_CSInitializeTaskStack(uint8_t* stack, uint32_t stack
 	/* We do not pass argument so R0 must be zero. */
 	stackMap->R0 = (uintptr_t)NULL;
 
-	/* Return actual stack address for execution start */
+	/*
+	 * We already initialized a TCB for a Application (Process).
+	 * Application starts to use its stack from this address.
+	 *
+	 * Actual stack address for execution start
+	 */
 	return (reg32_t*)stackMap;
 }
 

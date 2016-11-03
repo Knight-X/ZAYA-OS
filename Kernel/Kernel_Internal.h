@@ -113,10 +113,10 @@
 #define Kernel_StartContextSwitching    Drv_CPUCore_CSStart
 
 /* Wrapper function definition to initialize task stack */
-#define Kernel_InitializeTaskStack      Drv_CPUCore_CSInitializeTaskStack
+#define Kernel_InitializeTCB      		Drv_CPUCore_CSInitializeTCB
 
 /* Wrapper function definition to yield running task to */
-#define Kernel_SwitchTo                 Drv_CPUCore_CSYieldTo
+#define Kernel_Switch                 	Drv_CPUCore_CSYield
 
 /* Wrapper function definition to create a Timer */
 #define Kernel_CreatePreemptionTimer    Drv_Timer_Create
@@ -179,34 +179,18 @@ typedef struct
 	 *
 	 */
 	uint8_t stack[1];
-} UserTaskBaseType;
+} AppBaseType;
 
 /*
- * Task Control Block (TCB)
- *
- *  Includes all task specific information including required information for
- *	Context Switching.
+ * User Application
  */
-typedef struct TCB
+typedef struct
 {
-	/*
-	 * Actual top address of stack of task.
-	 *
-	 *  When a user task is started, task starts to use stack from end of
-	 *  stack in descending order.
-	 *  When a task preempted, we need to save actual position of stack to
-	 *  backup next execution of task.
-	 *
-	 *	[IMP] This value must be first item in that data structure. When we pass
-	 *	a TCB to context switcher mechanism, HW looks for first address.
-	 */
-	reg32_t* topOfStack;
-
-	/*
-	 * User defined task Information.
-	 */
-	UserTaskBaseType* userTaskInfo;
-} TCB;
+	/* TCB of User Application */
+	TCB tcb;
+	/* User defined information of Application */
+	AppBaseType* info;
+} Application;
 /*************************** FUNCTION DEFINITIONS *****************************/
 
 #endif	/* __KERNEL_INTERNAL_H */
