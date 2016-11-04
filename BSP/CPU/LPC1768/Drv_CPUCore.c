@@ -212,25 +212,6 @@ void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNe
 }
 
 /*
- * Switches running task to provided new TCB
- *
- * @param newTCB to be switched TCB
- * @param none
- * 
- */
-void Drv_CPUCore_CSYield(void)
-{
-	/* Set a PendSV to request a context switch. */
-    SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
-	
-	/*     
-     * Barriers are normally not required but do ensure the code is completely
-	 * within the specified behavior for the architecture. (Note From FreeRTOS)
-     */
-    __DMB();
-}
-
-/*
  * Initializes task stack according to Cortex-M3 Architecture.   
  *
  * @param stack to be initialized task stack

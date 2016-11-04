@@ -64,6 +64,15 @@ typedef struct
 	 *	a TCB to context switcher mechanism, HW looks for first address.
 	 */
 	reg32_t* topOfStack;
+	
+	/*
+	 * Task Specific Flags
+	 */
+	struct
+	{
+		/* Indicates whether if task runs in privileged or unpriviliged state */
+		uint32_t privileged : 1;
+	} flags;
 } TCB;
 
 /*

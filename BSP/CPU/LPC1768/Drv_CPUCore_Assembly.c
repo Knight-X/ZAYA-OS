@@ -48,8 +48,13 @@
  ******************************************************************************/
 
 /********************************* INCLUDES ***********************************/
+
 #include "Drv_CPUCore.h"
 #include "Drv_CPUCore_Internal.h"
+
+#include "LPC17xx.h"
+#include "cmsis_armcc.h"
+
 #include "postypes.h"
 
 /***************************** MACRO DEFINITIONS ******************************/
@@ -65,6 +70,19 @@
  */
 #define MAX_SYSCALL_INTERRUPT_PRIORITY 		(191) /* equivalent to 0xb0, or priority 11. */
 
+/*  */
+#define LOAD_EXEC_RETURN_CODE 				(0xfffffffd)
+
+/*
+ * Super-Visor Call Types
+ */
+/* Start Context Switching using first task */
+#define CPUCORE_SVCALL_START_CS				(0)
+/* Task Yield */
+#define CPUCORE_SVCALL_YIELD				(1)
+/* Raise Privilege Mode */
+#define CPUCORE_SVCALL_RAISE_PRIVILEGE		(2)
+
 /***************************** TYPE DEFINITIONS *******************************/
 
 /**************************** FUNCTION PROTOTYPES *****************************/
@@ -79,18 +97,28 @@ extern TCB* currentTCB;
 
 #if defined(__ARMCC_VERSION) /* ARMCC Assembly Area */
 
+/*
+ * Returns Process Stack Pointer (PSP)
+ */
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION reg32_t GetPSP(void)
 {
     MRS r0, psp
     BX lr
 }
 
+/*
+ * Returns Process Stack Pointer (PSP)
+ */
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP)
 {
     MSR psp, r0
     BX lr
 }
 
+/*
+ * Stores actual values of register to preempted process' stack to use them
+ * in next context switching
+ */
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void)
 {
     MRS r0, psp
@@ -99,6 +127,9 @@ PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void)
     BX lr
 }
 
+/*
+ * Loads next process's register values to CPU registers. 
+ */
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void)
 {
     MRS r0, psp
@@ -123,22 +154,52 @@ void POS_PendSV_Handler(void)
 
 	/* Get next TCB from Upper Layer (e.g. Kernel) */
 	currentTCB = GetNextTCBCallBack();
-
+	
 	/* Set process stack (PSP) to new application stack */
 	SetPSP((reg32_t)currentTCB->topOfStack);
-
+	
+	/* 
+	 * Set control register. 
+	 *  No need to set Stack Pointer (PSP/MSP) because "In Handler mode this bit
+	 *  reads as zero and ignores writes (Comment from Cortex M3 TRM)"
+	 *
+	 * Just set privileged bit. 
+	 */
+	__set_CONTROL((currentTCB->flags.privileged == 0));
+	
 	/* Load registers using new application registers which already kept in its stack */
 	LoadRegisterFromPSP();
+	
 }
 
 /*
- * ISR for SVC Exception
+ * SVC (Super-Visor Call) IRQ Handler
  *
- *  We use SVC Interrupt to start Context Switching
+ *  We are using super-visor calls to handle context switching and system calls
+ *  from unprivileged applications.
  *
- * Implementation copied from FreeRTOS
+ *   Please see
+ *   infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s02s07.html
+ *   to see how to pass parameter to SVC Calls
+ *
  */
 ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
+{
+	IMPORT SVCHandler
+
+	TST lr, #4
+	MRSEQ r0, MSP
+	MRSNE r0, PSP
+
+	/* Call SVCHandler function to process SVC Call */
+	B SVCHandler
+}
+
+/*
+ * Switchies Context to first task
+ *
+ */
+ASSEMBLY_FUNCTION void SwitchToFirstTask(void)
 {
 	extern currentTCB;
 
@@ -147,13 +208,53 @@ ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
 	ldr	r3, =currentTCB		/* Restore the context. */
 	ldr r1, [r3]			/* Get the currentTCB address. */
 	ldr r0, [r1]			/* The first item in currentTCB is the task top of stack. */
+	
 	ldmia r0!, {r4-r11}		/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
 	msr psp, r0				/* Restore the task stack pointer. */
 	isb
 	mov r0, #0
 	msr	basepri, r0
-	orr r14, #0xd
+	ldr r14, =LOAD_EXEC_RETURN_CODE		/* Load exec return code. */
 	bx r14
+	nop
+}
+
+/*
+ * SVC Request Handler
+ *  Handles and processes specific Super-Visor Calls
+ */
+void SVCHandler(uint32_t * svc_args)
+{
+	uint32_t svc_number;
+
+	/*
+     * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s02s07.html
+     * Stack contains:    * r0, r1, r2, r3, r12, r14, the return address and xPSR
+	 * First argument (r0) is svc_args[0]
+	 */
+	svc_number = ((char *)svc_args[6])[-2];
+
+	switch(svc_number)
+	{
+		case CPUCORE_SVCALL_START_CS:
+			SwitchToFirstTask();
+			break;
+		case CPUCORE_SVCALL_YIELD:
+			/* Set a PendSV to request a context switch. */
+			SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
+
+			/*
+			 * Barriers are normally not required but do ensure the code is completely
+			 * within the specified behavior for the architecture. (Note From FreeRTOS)
+			 */
+			__DMB();
+			break;
+		case CPUCORE_SVCALL_RAISE_PRIVILEGE:
+			/* Not defined yet */
+			break;
+		default:
+			break;
+	}
 }
 
 /*
@@ -165,7 +266,8 @@ ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
  *         with the Kernel (and user) defined tasks.
  *
  */
-ASSEMBLY_FUNCTION void StartContextSwitching(void){
+ASSEMBLY_FUNCTION void StartContextSwitching(void)
+{
 	PRESERVE8
 
 	/* Use the NVIC offset register to locate the stack. */
@@ -175,15 +277,15 @@ ASSEMBLY_FUNCTION void StartContextSwitching(void){
 
 	/* Set the msp back to the start of the stack. */
 	msr msp, r0
+	
 	/* Globally enable interrupts. */
 	cpsie i
 	cpsie f
 	dsb
 	isb
+	
 	/* Call SVC to start the first task. */
-	svc 0
-	nop
-	nop
+	svc #CPUCORE_SVCALL_START_CS
 }
 
 /*
@@ -203,6 +305,28 @@ ASSEMBLY_FUNCTION void JumpToImage(uint32_t imageAddress)
 {
    LDR SP, [R0]     /* Load new stack pointer address */
    LDR PC, [R0, #4] /* Load new program counter address */
+}
+
+/*
+ * Triggers a context switch
+ * 
+ */
+void Drv_CPUCore_CSYield(void)
+{
+	/* 
+	 * For a privileged system we could trigger the PendSV interrupt using 
+	 * " Interrupt Control and State Register (ICSR)" for Context
+	 * Switching. 
+	 * But for an ecosystem which includes also unprivileged process's, 
+	 * it is forbidden to access ICSR register by unprivileged process. 
+	 * 
+	 * Therefore, we need to make specific Super-Visor Call to trigger PendSV
+	 * for context switching. 
+	 */
+	__asm
+	{
+		svc #CPUCORE_SVCALL_YIELD
+	}
 }
 
 #else /* GNU C - GCC Assembly Area */
