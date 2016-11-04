@@ -169,17 +169,6 @@ void test_CPU_CS_Start(void)
 }
 
 /*
- * Tests Task Yield Functionality
- */
-void test_CPU_CS_YieldTo(void)
-{
-	Drv_CPUCore_CSYield();
-
-	/* provided TCB should be kept in nextTCB object for next context switching */
-	TEST_ASSERT(SCB->ICSR == (reg32_t)SCB_ICSR_PENDSVSET_Msk);
-}
-
-/*
  * Tests Stack Initialization
  */
 void test_CPU_CS_InitializeTaskStack(void)
