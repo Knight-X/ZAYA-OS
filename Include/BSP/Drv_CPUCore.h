@@ -149,13 +149,11 @@ void Drv_CPUCore_CSYield(void);
  *
  * @param tcb to be initialized Task Control Block (TCB)
  * @param stack to be initialized task stack
- * @param stackSize Stack Size
  * @param taskStartPoint Start Point (Function) of Task
  *
  * @return none
  */
-reg32_t* Drv_CPUCore_CSInitializeTCB(uint8_t* stack, uint32_t stackSize,
-									 Drv_CPUCore_TaskStartPoint startPoint);
+reg32_t* Drv_CPUCore_CSInitializeTCB(reg32_t topOfStack, reg32_t startPoint);
 
 /*
  * Jumps to other image on system.

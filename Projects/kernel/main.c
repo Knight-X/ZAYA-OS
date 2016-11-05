@@ -54,13 +54,13 @@ static void delayMs(uint32_t delayInMs)
 OS_USER_TASK_START_POINT(MyTask1Func)
 {
     (void)args;
-    
+
     while (1)
     {
         Delay(TASK_DELAY_IN_MS / 2);
 
         Board_LedOn(0);
-        
+
         Delay(TASK_DELAY_IN_MS / 2);
 
 #if OS_SCHEDULER == OS_SCHEDULER_COOPARATIVE
@@ -72,11 +72,11 @@ OS_USER_TASK_START_POINT(MyTask1Func)
 OS_USER_TASK_START_POINT(MyTask2Func)
 {
     (void)args;
-    
+
     while (1)
     {
         Board_LedOff(0);
-        
+
         Delay(TASK_DELAY_IN_MS);
 
 #if OS_SCHEDULER == OS_SCHEDULER_COOPARATIVE

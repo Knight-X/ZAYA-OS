@@ -54,18 +54,21 @@
 /***************************** TYPE DEFINITIONS *******************************/
 
 /**************************** FUNCTION PROTOTYPES *****************************/
-/* 
- * IDLE Task Definitions
- */
-PRIVATE OS_USER_TASK_START_POINT(IdleTaskFunc);
 
 /******************************** VARIABLES ***********************************/
-/*
- * Idle Task
- * 
- *  We use idle task for side things which maintains system
- */
-KERNEL_TASK(IdleTask, IdleTaskFunc, IDLE_TASK_STACK_SIZE, IDLE_TASK_PRIORITY);
+
+#define APP_TEST_MODE	1
+
+#if APP_TEST_MODE
+
+PRIVATE AppImageInfo* userApps[NUM_OF_USER_TASKS] =
+{
+	/* Tries to statically allocated images */
+	(AppImageInfo*)0x10000,
+	(AppImageInfo*)0x20000
+};
+
+#endif
 
 /*
  * Task Pool.
@@ -74,27 +77,7 @@ KERNEL_TASK(IdleTask, IdleTaskFunc, IDLE_TASK_STACK_SIZE, IDLE_TASK_PRIORITY);
  */
 PRIVATE Application kernelTaskPool[NUM_OF_USER_TASKS];
 
-/*
- * Task Pool. 
- * 
- *  Keeps all kernel and user tasks. 
- */
-PRIVATE Application idleApp;
-
 /**************************** PRIVATE FUNCTIONS ******************************/
-
-/*
- * Idle System Task Code Block 
- *
- */
-PRIVATE KERNEL_TASK_START_POINT(IdleTaskFunc)
-{
-    while (1)
-    {
-        /* For now just yield */
-        OS_Yield();
-    }
-}
 
 /*
  * Initialize a new task
@@ -103,12 +86,10 @@ PRIVATE KERNEL_TASK_START_POINT(IdleTaskFunc)
  */
 PRIVATE ALWAYS_INLINE void InitializeNewTask(Application* app)
 {
-	AppBaseType* userApp = app->info;
-    
-	/* Initialize stack of user task according to CPU architecture */
-	app->tcb.topOfStack = Kernel_InitializeTCB(userApp->stack,
-											   userApp->stackSize,
-											   userApp->taskStartPoint);
+	AppImageInfo* info = app->info;
+
+	app->tcb.topOfStack = Kernel_InitializeTCB(info->image.sp, info->image.pc);
+	app->tcb.flags.privileged = 0;
 }
 
 /**
@@ -131,11 +112,10 @@ PRIVATE TCB* SchedulerGetNextApp(void)
  */
 PRIVATE ALWAYS_INLINE void StartScheduling(void)
 {
-	/* Start context switching using
-	 *  - Idle task
-	 *  - TCB provider Callback
-	 */
-	Kernel_StartContextSwitching(&(idleApp.tcb), SchedulerGetNextApp);
+	Application* firstApp = Scheduler_GetNextApp();
+
+	/* Start context switching using first task and TCB provider Callback */
+	Kernel_StartContextSwitching(&firstApp->tcb, SchedulerGetNextApp);
 }
 
 /**
@@ -150,30 +130,17 @@ PRIVATE ALWAYS_INLINE void InitializeAllTasks(void)
 	Application* app = &kernelTaskPool[0];
 	int32_t taskIndex = 0;
 
-	/*
-	 * Each User task creates its type and we collect user tasks in a single
-	 * container (startupApplications) to manage startup applications.
-	 * To do that we defined this container type as "void* array".
-	 * While we can not use pointer operations on "void* arrays", we cast this
-	 * array to a non - typeless array (int* as a word of a CPU which  most
-	 * suitable type for pointer array arithmetic)
-	 *
-	 */
-    int* appPtr = (int*)startupApplications;
-
-	/* Initialize user tasks */
-    for (taskIndex = 0; taskIndex < NUM_OF_USER_TASKS; taskIndex++, app++, appPtr++)
+	/* Initialize all tasks */
+	for (taskIndex = 0; taskIndex < NUM_OF_USER_TASKS; taskIndex++, app++)
 	{
-		/* Save User Task Info into TCB */
-		app->info = (AppBaseType*)*appPtr;
+#if APP_TEST_MODE
+		app->info = userApps[taskIndex];
+#else
+		#error "Should be implemented"
+#endif
 
-		/* Initialize New Task */
-        InitializeNewTask(app);
+		InitializeNewTask(app);
 	}
-
-	/* Initialize idle task */
-	idleApp.info = (AppBaseType*)OS_USER_TASK_PREFIX(IdleTask);
-    InitializeNewTask(&idleApp);
 }
 
 /**
@@ -190,10 +157,7 @@ PRIVATE ALWAYS_INLINE void InitializeKernel(void)
 	InitializeAllTasks();
 
 	/* Initialize Scheduler */
-	Scheduler_Init(kernelTaskPool, &idleApp);
-
-	/* Initialize User Space */
-	OS_InitializeUserSpace();
+	Scheduler_Init(kernelTaskPool);
 }
 
 PRIVATE ALWAYS_INLINE void InitializeHW(void)

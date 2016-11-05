@@ -1,12 +1,12 @@
 /*******************************************************************************
  *
- * @file Scheduler.h
+ * @file BSPConfig.h
  *
  * @author Murat Cakmak
  *
- * @brief Generic Scheduler Interface for Kernel
+ * @brief Project Specific BSP Configurations
  *
- * @see https://github.com/P-LATFORM/P-OS/wiki
+ * @see https://github.com/P-LATFORM/SP-OS/wiki
  *
  ******************************************************************************
  *
@@ -33,35 +33,26 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef __SCHEDULER_H
-#define __SCHEDULER_H
+#ifndef __BOARD_CONFIG_H
+#define __BOARD_CONFIG_H
 
 /********************************* INCLUDES ***********************************/
-#include "Kernel_Internal.h"
-
 #include "postypes.h"
-
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
 
-/*************************** FUNCTION DEFINITIONS *****************************/
-/*
- * Initializes Scheduler.
- *
- * @param tcbList Task List (Pool) to be scheduled
- *
- * @return none
- */
-void Scheduler_Init(Application* tcbList);
+/* BOARD LED INTERFACE */
+#define BOARD_ENABLE_LED_INTERFACE 1
 
-/*
- * Returns ready TCB to run.
- *
- * @param none
- *
- * @return A ready TCB to run.
- */
-Application* Scheduler_GetNextApp(void);
+/* BOARD LCD INTERFACE */
+#define BOARD_ENABLE_LCD_INTERFACE 0
 
-#endif	/* __SCHEDULER_H */
+#if (BOARD_ENABLE_LED_INTERFACE && BOARD_ENABLE_LCD_INTERFACE)
+    #error "LED and LCD interfaces can not be used at same time!"
+#endif
+
+#define CPU_TIMER_MAX_TIMER_COUNT       (30)
+
+
+#endif	/* __BOARD_CONFIG_H */

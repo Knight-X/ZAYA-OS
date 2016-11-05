@@ -172,7 +172,7 @@ void test_CPU_CS_InitializeTaskStack(void)
 	StackMap* stackMap;
 	TCB tcb;
 
-	tcb.topOfStack = Drv_CPUCore_CSInitializeTCB((uint8_t*)testStack, sizeof(testStack), taskStartPoint);
+	tcb.topOfStack = Drv_CPUCore_CSInitializeTCB((reg32_t)&testStack[32], (reg32_t)taskStartPoint);
 
 	/* Cast Stack to Stack Map to access fields easy */
 	stackMap = (StackMap*)tcb.topOfStack;
@@ -213,7 +213,6 @@ void test_CPU_CS_StackAlignmentTest(void)
 	reg32_t testStack[32];
 	int32_t i;
 	uint8_t* stackStartAddr;
-	uint32_t stackSize;
 	TCB tcb;
 
 	/*
@@ -223,12 +222,10 @@ void test_CPU_CS_StackAlignmentTest(void)
 	for (i = 0; i < 8; i++)
 	{
 		/* Increase stack offset by one */
-		stackStartAddr = ((uint8_t*)testStack) + i;
-		/* Decrease stack size by one. This is not mandatory. Just for stay in safe side */
-		stackSize = sizeof(testStack) - i;
+		stackStartAddr = ((uint8_t*)&testStack[30]) + i;
 
 		/* Give a raw and get top of initialized stack address */
-		tcb.topOfStack = Drv_CPUCore_CSInitializeTCB(stackStartAddr, stackSize, taskStartPoint);
+		tcb.topOfStack = Drv_CPUCore_CSInitializeTCB((reg32_t)stackStartAddr, (reg32_t)taskStartPoint);
 
 		/* Check Address Alignment first. Address should be multiple of 8 */
 		TEST_ASSERT((((uintptr_t)tcb.topOfStack) & 0x7) == 0);

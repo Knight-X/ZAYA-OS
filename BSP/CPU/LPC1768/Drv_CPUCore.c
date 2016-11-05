@@ -220,16 +220,14 @@ void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNe
  *
  * @return top of stack after initialization. 
  */
-PUBLIC reg32_t* Drv_CPUCore_CSInitializeTCB(uint8_t* stack, uint32_t stackSize, Drv_CPUCore_TaskStartPoint taskStartPoint)
+PUBLIC reg32_t* Drv_CPUCore_CSInitializeTCB(reg32_t topOfStack, reg32_t taskStartPoint)
 {
-	reg32_t* topOfStack = (reg32_t*)stack;
-	uint32_t stackDepth = stackSize / sizeof(int);
 	TaskStackMap* stackMap;
 
-	/* Calculate the top of user stack address which aligned */
-	topOfStack = topOfStack + (stackDepth - 1);
+	/* Calculate the top of user stack aligned address */
+	topOfStack -= sizeof(reg32_t);
 	/* Align Stack Address with 8 */
-	topOfStack = (reg32_t*)(((uintptr_t)topOfStack) & (~(0x0007)));
+	topOfStack = topOfStack & (~(0x0007));
 
 	/* Map Stack Address */
 	stackMap = (TaskStackMap*)topOfStack;
