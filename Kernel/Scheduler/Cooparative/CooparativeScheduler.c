@@ -43,10 +43,8 @@ typedef struct
 {
     /* Task pool for all user tasks */
     Application* taskPool;
-    /* Idle task TCB reference*/
-    Application* idleTask;
     /* Task index to track current task in cooparative scheduling */
-    int taskIndex;
+    uint32_t taskIndex;
 } CooparativeScheduler;
 /**************************** FUNCTION PROTOTYPES *****************************/
 
@@ -61,10 +59,9 @@ PRIVATE CooparativeScheduler scheduler;
 /*
  * Initializes Scheduler
  */
-PUBLIC void Scheduler_Init(Application* appList, Application* idleApp)
+PUBLIC void Scheduler_Init(Application* appList)
 {
     scheduler.taskPool = appList;
-    scheduler.idleTask = idleApp;
     scheduler.taskIndex = 0;
 }
 

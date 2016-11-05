@@ -24,8 +24,6 @@
 #include "Drv_Timer.h"
 #include "Drv_CPUCore.h"
 
-#include "UserStartupInfo.h"
-
 #include "OSConfig.h"
 #include "SysConfig.h"
 
@@ -36,34 +34,20 @@
 /*
  * Number of Kernel Tasks
  *
- *  - We just have an idle task.
+ *  - Does not exist for now
  */
-#define NUM_OF_KERNEL_TASKS				(1)
+#define NUM_OF_KERNEL_TASKS				(0)
 
 /*
  * Returns Numbers of User Tasks
  */
-#define NUM_OF_USER_TASKS \
-			(sizeof(startupApplications) / sizeof(void*))
+#define NUM_OF_USER_TASKS				OS_MAX_USER_APP
 
 /*
  * Number of all task including kernel and user tasks
  */
 #define NUM_OF_ALL_TASKS \
 			(NUM_OF_KERNEL_TASKS + NUM_OF_USER_TASKS)
-
-/*
- * Size of idle stack.
- *
- *  128 byte should be enough
- */
-#define IDLE_TASK_STACK_SIZE		    (128)
-
-/*
- * Idle Task Priority
- *  Lower Priority (0)
- */
-#define IDLE_TASK_PRIORITY              (0)
 
 /*
  * Kernel Task Creater Definition.
@@ -82,6 +66,14 @@
  *  Kernel Timer is a critical timer so priority selected as High.
  */
 #define KERNEL_TIMER_PRIORITY           DRV_TIMER_PRI_HIGH
+
+/* TODO This value should be common for all images (BL, FW, User Apps)*/
+#define APP_IMAGE_SIGNATURE_LENGTH       (256)
+
+#define APP_IMAGE_METADATA_LENGTH        (256 + FIRMWARE_SIGNATURE_LENGTH)
+
+#define APP_IMAGE_META_DATA_PADDING_SIZE \
+			((APP_IMAGE_SIGNATURE_LENGTH - sizeof(AppImageMetaDataHeader)) / sizeof(uint32_t))
 
 /*
  * Following defines are just wrapper definitions and covers Driver Layer APIs.
@@ -111,16 +103,6 @@
 /* Wrapper function definitions to get time stamp */
 #define Kernel_GetPreemptionTimeStamp   Drv_Timer_ReadElapsedTimeInUs
 
-/********************************* VARIABLES *******************************/
-
-/*
- * User Space Applications which are started at startup
- * (after system initialization)
- *
- * We use following user-defined container to access user applications
- */
-extern void* startupApplications[];
-
 /***************************** TYPE DEFINITIONS *******************************/
 /*
  * Wrapper Timer Handle definition to abstract external definition in kernel.
@@ -128,42 +110,51 @@ extern void* startupApplications[];
 typedef TimerHandle KernelTimerHandle;
 
 /*
- * Base type for User Task
- *
- *  Each static user task implements its type implicitly using OS_USER_TASK()
- *  macro and specifies task specific features. e.g stack size.
- *  We can handle task specific differencies using this base type.
+ * Image Meta Data Header
  */
 typedef struct
 {
+	reg32_t imageSize;
+	reg32_t imageOffset;
+	reg32_t stackSize;
+} AppImageMetaDataHeader;
+
+/*
+ * Application Image and its attributes
+ *  SP-OS user applications must be specialized for SP-OS and needs to have a
+ *  meta data which includes image attributes, image signature.
+ *  After that, SP-OS User Application image must also start from main()
+ *  function instead of Reset_Vector so second word of user app image must keep
+ *  address of main function of User App.
+ *
+ *  Kernel can access to User Application attributes by casting start address of
+ *  image to this structure.
+ */
+typedef struct
+{
+	/* Meta Data Header of User Application  */
+    AppImageMetaDataHeader metaDataHeader;
+	/* Padding to keep signature and image align */
+    uint32_t padding[APP_IMAGE_META_DATA_PADDING_SIZE];
 	/*
-	 * User Task start point.
-	 *
-	 * User task starts with that point (function).
-	 * Program Counter (PC) is set to this value when task is started.
+	 * User Image Signature
+	 *  Used to validate user application.
 	 */
-	OSUserTaskStartPoint taskStartPoint;
-    /*
-     * User Task Priority
-     */
-    uint32_t priority;
+    uint8_t imageSignature[APP_IMAGE_SIGNATURE_LENGTH];
 	/*
-	 * Stack size of User Task
+	 * User Application Image
+	 *  - First Word of image keeps Stack Pointer (Stack Start Address)
+	 *  - Second Word of image keeps PC (Program Counter - Start point for
+	 *    code execution)
+	 *     SP-OS User Images does not have and Reset Vector, they starts from
+	 *     main() function directly.
 	 */
-	uint32_t stackSize;
-	/*
-	 * Start address of task stack.
-	 *
-	 * We use this variable for just start point of user task.
-	 * Boundary check can be done by stackSize variable.
-	 *
-	 * NOTE : While each task has different stack size, we define size as
-	 * '1' to get start point of user stack. It could be zero but zero-sized
-	 * arrays are not portable and some platforms does not support it.
-	 *
-	 */
-	uint8_t stack[1];
-} AppBaseType;
+    struct
+	{
+		reg32_t sp;		/* Stack Pointer (SP) */
+		reg32_t pc;		/* Program Counter (PC) */
+	} image;
+} AppImageInfo;
 
 /*
  * User Application
@@ -172,9 +163,15 @@ typedef struct
 {
 	/* TCB of User Application */
 	TCB tcb;
-	/* User defined information of Application */
-	AppBaseType* info;
+
+	/*
+	 * User Application Image Info.
+	 * Includes metadata, signature and image.
+	 */
+	AppImageInfo* info;
 } Application;
 /*************************** FUNCTION DEFINITIONS *****************************/
+
+/********************************* VARIABLES *******************************/
 
 #endif	/* __KERNEL_INTERNAL_H */

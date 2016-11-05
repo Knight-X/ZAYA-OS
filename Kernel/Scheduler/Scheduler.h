@@ -34,12 +34,10 @@
  * Initializes Scheduler.
  *
  * @param tcbList Task List (Pool) to be scheduled
- * @param idle TCB of Idle task. Scheduler may decide to run idle task if there
- *        does not exist any ready task.
  *
  * @return none
  */
-void Scheduler_Init(Application* tcbList, Application* idleTCB);
+void Scheduler_Init(Application* tcbList);
 
 /*
  * Returns ready TCB to run.

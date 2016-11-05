@@ -1,23 +1,18 @@
 /*******************************************************************************
  *
- * @file UserStartupInfo.h
+ * @file Kernel.h
  *
  * @author Murat Cakmak
  *
- * @brief P-OS support static task creation to decrease memory footprint and
- * 		  this file provides information about static user tasks.
+ * @brief SP-OS Kernel Interface for User Applications.
  *
- * 		  - This file is a mandatory for static task creation.
- * 		  - Also user must specify startup task using STARTUP_APPLICATIONS(...)
- * 		  	macro
- *
- * @see https://github.com/P-LATFORM/P-OS/wiki
+ * @see https://github.com/P-LATFORM/SP-OS/wiki
  *
  ******************************************************************************
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 P-OS
+ * Copyright (c) 2016 SP-OS
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,42 +33,24 @@
  * SOFTWARE.
  *
  *******************************************************************************/
-#ifndef __USER_STARTUP_INFO_H
-#define __USER_STARTUP_INFO_H
+#ifndef __KERNEL_H
+#define __KERNEL_H
 
 /********************************* INCLUDES ***********************************/
-#include "Kernel.h"
-
 #include "postypes.h"
 
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
 
-/**************************** FUNCTION PROTOTYPES *****************************/
-/*
- * User Task Start Points (Functions)
- */
-OS_USER_TASK_START_POINT(MyTask1Func);
-OS_USER_TASK_START_POINT(MyTask2Func);
+/*************************** FUNCTION DEFINITIONS *****************************/
 
-/********************************* VARIABLES **********************************/
-
-/* User Task 1 with 256 stack size */
-OS_USER_TASK(MyTask1, MyTask1Func, 256, 15);
-
-/* User Task 1 with 512 stack size */
-OS_USER_TASK(MyTask2, MyTask2Func, 512, 15);
-
-/*
- * Startup Application.
- * After bootup and kernel initialization, kernel starts following applications
+/**
+ * Interrupts running task execution and switches execution to next ready task.
  *
+ * @param none
+ * @return none
  */
-OS_STARTUP_APPLICATIONS
-(
-    OS_USER_TASK_PREFIX(MyTask1),
-    OS_USER_TASK_PREFIX(MyTask2)
-)
+void OS_Yield(void);
 
-#endif	/* __USER_STARTUP_INFO_H */
+#endif	/* __KERNEL_H */

@@ -44,7 +44,7 @@
 /* Selected Scheduler Type */
 #define OS_SCHEDULER						OS_SCHEDULER_COOPARATIVE
 
-#define OS_TASK_CREATION                    OS_TASK_CREATION_STATIC
+#define OS_MAX_USER_APP						(2)
 
 /***************************** TYPE DEFINITIONS *******************************/
 
