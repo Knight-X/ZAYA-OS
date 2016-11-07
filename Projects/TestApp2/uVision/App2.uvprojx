@@ -310,7 +310,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>4</Optim>
+            <Optim>1</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -417,7 +417,7 @@
             <File>
               <FileName>kernel_symbols</FileName>
               <FileType>3</FileType>
-              <FilePath>..\..\kernel\uVision\Objects\kernel_symbols</FilePath>
+              <FilePath>..\..\kernel\symbols\kernel_symbols</FilePath>
             </File>
           </Files>
         </Group>

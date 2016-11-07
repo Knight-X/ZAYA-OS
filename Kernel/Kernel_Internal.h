@@ -85,8 +85,14 @@
 /* Wrapper function definition to initialize CPU */
 #define Kernel_InitializeCPU            Drv_CPUCore_Init
 
+/* Wrapper function definition to initialize Exception Management */
+#define Kernel_InitializeExceptions		Drv_CPUCore_InitializeExceptions
+
 /* Wrapper function definition to start context switching */
 #define Kernel_StartContextSwitching    Drv_CPUCore_CSStart
+
+/* Wrapper function definition for task yield */
+#define Kernel_Yield					Drv_CPUCore_CSYield
 
 /* Wrapper function definition to initialize task stack */
 #define Kernel_InitializeTCB      		Drv_CPUCore_CSInitializeTCB
@@ -108,6 +114,17 @@
  * Wrapper Timer Handle definition to abstract external definition in kernel.
  */
 typedef TimerHandle KernelTimerHandle;
+
+/*
+ * Application States
+ */
+typedef enum
+{
+	AppState_New,
+	AppState_Ready,
+	AppState_Running,
+	AppState_Terminated
+} ApplicationState;
 
 /*
  * Image Meta Data Header
@@ -164,14 +181,22 @@ typedef struct
 	/* TCB of User Application */
 	TCB tcb;
 
+	/* Application ID */
+	int32_t id;
+	
 	/*
 	 * User Application Image Info.
 	 * Includes metadata, signature and image.
 	 */
 	AppImageInfo* info;
+	
+	/* Actual State of Application */
+	ApplicationState state;
+
 } Application;
 /*************************** FUNCTION DEFINITIONS *****************************/
 
 /********************************* VARIABLES *******************************/
+extern INTERNAL Application* activeApp;
 
 #endif	/* __KERNEL_INTERNAL_H */

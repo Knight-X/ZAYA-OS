@@ -41,9 +41,15 @@
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
+
+#ifndef ENABLE_STACK_DUMP
+#define ENABLE_STACK_DUMP								(1)
+#endif /* ENABLE_STACK_DUMP */
+
 /*
  * Used HW Timer count in that projects.
  */
 #define DRV_CONFIG_NUM_OF_USED_HW_TIMERS				(2)
+
 
 #endif	/* __DRV_CONFIG_H */

@@ -128,6 +128,14 @@ void Drv_CPUCore_Init(void)
 }
 
 /*
+ * Resets device
+ */
+void Drv_CPUCore_ResetDevice(void)
+{
+	NVIC_SystemReset();
+}
+
+/*
  * Halts all system. 
  */
 void Drv_CPUCore_Halt(void)

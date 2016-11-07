@@ -29,14 +29,31 @@
 #include "Kernel_Internal.h"
 #include "Scheduler.h"
 
-#include "Board.h"
+#include "Debug.h"
 
 #include "postypes.h"
 
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
+/*
+ * Kernel Internal Settings 
+ */
+typedef struct
+{
+	/* Internal Flags*/
+	struct
+	{
+		uint32_t superVisorMode : 1;
+	} flags;
 
+	/*
+	 * Task Pool.
+	 * 
+	 *  Keeps all kernel and user tasks.
+	 */
+	Application taskPool[NUM_OF_USER_TASKS];
+} KernelSettings;
 /**************************** FUNCTION PROTOTYPES *****************************/
 
 /******************************** VARIABLES ***********************************/
@@ -54,14 +71,65 @@ PRIVATE AppImageInfo* userApps[NUM_OF_USER_TASKS] =
 
 #endif
 
-/*
- * Task Pool.
- * 
- *  Keeps all kernel and user tasks.
- */
-PRIVATE Application kernelTaskPool[NUM_OF_USER_TASKS];
+/* Kernel Internal Settings */
+PRIVATE KernelSettings kernelSettings = { { 0 } };
+
+/* Active Application */
+INTERNAL Application* activeApp;
 
 /**************************** PRIVATE FUNCTIONS ******************************/
+/*
+ * Simple printout interface to dump stack content. 
+ */
+PRIVATE void printOut(uint8_t* message)
+{
+	DEBUG_PRINTF((char*)message);
+}
+
+/*
+ * Kernel Level Exception Handler.
+ */
+PRIVATE void exceptionHandler(Exception exception, uint32_t val, StackDumpCallback stackDump)
+{
+	DEBUG_PRINTF("\nERR Exc:%d-%d", exception, val);
+	
+	if (stackDump != NULL)
+	{
+		/* 
+		 * Print stack content to specified output to provide more information 
+		 * to find root cause of exception. 
+		 */
+		stackDump(printOut);
+	}
+	
+	if (kernelSettings.flags.superVisorMode == false)
+	{
+		/*
+		 * Exception is occurred in a User Application
+		 */
+		DEBUG_PRINT_ERROR("\nApp Exc. Terminating %d", activeApp->id);
+		
+		/* Terminate faulty user application */
+		Scheduler_TerminateApplication();
+		
+		/* Yield to next application */
+		Kernel_Yield(true);
+	}
+	else
+	{
+		/*
+		 * UPS it is kernel crash. No way to restore. 
+		 */
+		DEBUG_PRINT_ERROR("\nOS Exc. Resetting device");
+
+		/* May need a delay to print all output in previous line before reset */
+		
+		/*
+		 * RESET The Device. 
+		 */
+		Drv_CPUCore_ResetDevice();		
+	}
+}
 
 /*
  * Initialize a new task
@@ -72,8 +140,11 @@ PRIVATE ALWAYS_INLINE void InitializeNewTask(Application* app)
 {
 	AppImageInfo* info = app->info;
 
+	/* User application always work in unprivileged mode */
+	app->tcb.flags.privileged = false;
+	
+	/* Initialize TCB of User Application */
 	app->tcb.topOfStack = Kernel_InitializeTCB(info->image.sp, info->image.pc);
-	app->tcb.flags.privileged = 0;
 }
 
 /**
@@ -97,6 +168,12 @@ PRIVATE TCB* SchedulerGetNextApp(void)
 PRIVATE ALWAYS_INLINE void StartScheduling(void)
 {
 	Application* firstApp = Scheduler_GetNextApp();
+	
+	/* 
+	 * Kernel finalized all initial tasks. 
+	 * Now exit from Super Visor Mode before switching to User App
+	 */
+	kernelSettings.flags.superVisorMode = false;
 
 	/* Start context switching using first task and TCB provider Callback */
 	Kernel_StartContextSwitching(&firstApp->tcb, SchedulerGetNextApp);
@@ -111,7 +188,7 @@ PRIVATE ALWAYS_INLINE void StartScheduling(void)
  */
 PRIVATE ALWAYS_INLINE void InitializeAllTasks(void)
 {
-	Application* app = &kernelTaskPool[0];
+	Application* app = &kernelSettings.taskPool[0];
 	int32_t taskIndex = 0;
 
 	/* Initialize all tasks */
@@ -141,20 +218,23 @@ PRIVATE ALWAYS_INLINE void InitializeKernel(void)
 	InitializeAllTasks();
 
 	/* Initialize Scheduler */
-	Scheduler_Init(kernelTaskPool);
+	Scheduler_Init(kernelSettings.taskPool);
 }
 
 PRIVATE ALWAYS_INLINE void InitializeHW(void)
 {
 	/* Initialize CPU First */
 	Kernel_InitializeCPU();
+	
+	/* Initialize Exception Management */
+	Kernel_InitializeExceptions(exceptionHandler);
 }
 
 /***************************** PUBLIC FUNCTIONS *******************************/
 PUBLIC void OS_Yield(void)
 {
 	/* Just trigger Low Level Yield */
-	Drv_CPUCore_CSYield();
+	Kernel_Yield(false);
 }
 
 /*
@@ -167,12 +247,15 @@ PUBLIC void OS_Yield(void)
  */
 int main(void)
 {
+	/* Initially, Kernel starts in Supervisor Mode */
+	kernelSettings.flags.superVisorMode = true;
+	
     /* Initialize HW First */
     InitializeHW();
- 
+	
 	/* Initialize Kernel */
 	InitializeKernel();
-
+	
 	/* Start Task Scheduling */
 	StartScheduling();
 

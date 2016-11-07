@@ -44,8 +44,16 @@ void Scheduler_Init(Application* tcbList);
  *
  * @param none
  *
- * @return A ready TCB to run.
+ * @return A ready Application to run. Returns NULL if there is no ready app
  */
 Application* Scheduler_GetNextApp(void);
+
+/*
+ * Terminates current active Application
+ *
+ * @param none
+ * @return none
+ */
+void Scheduler_TerminateApplication(void);
 
 #endif	/* __SCHEDULER_H */

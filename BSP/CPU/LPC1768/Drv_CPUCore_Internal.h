@@ -30,8 +30,19 @@
 
 /**************************** FUNCTION PROTOTYPES *****************************/
 
-/******************************** VARIABLES ***********************************/
+/*
+ * Callback to get next TCB from Upper Layer (e.g. Kernel)
+ */
+extern Drv_CPUCore_CSGetNextTCBCallback GetNextTCBCallBack;
 
+/*
+ * Generic Hard Fault Handler while HW Hard Fault handler is compiler 
+ * (armcc, gcc) dependent. HW handler calls this handler to process hard
+ * fault. 
+ */
+extern void HardFault_Handler(uint32_t stack[]);
+
+/******************************** VARIABLES ***********************************/
 
 /*************************** FUNCTION PROTOTYPES *****************************/
 /*

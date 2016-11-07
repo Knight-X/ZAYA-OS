@@ -45,6 +45,7 @@ Heap_Size       EQU     0x00000000
 __heap_base
 Heap_Mem        SPACE   Heap_Size
 __heap_limit
+				IMPORT SPOS_HardFault_Handler
 				IMPORT POS_SVC_Handler
 				IMPORT POS_PendSV_Handler
 				IMPORT POS_TIMER0_IRQHandler
@@ -64,10 +65,10 @@ __heap_limit
 __Vectors       DCD     __initial_sp              ; Top of Stack
                 DCD     Reset_Handler             ; Reset Handler
                 DCD     NMI_Handler               ; NMI Handler
-                DCD     HardFault_Handler         ; Hard Fault Handler
+                DCD     SPOS_HardFault_Handler    ; Hard Fault Handler
                 DCD     MemManage_Handler         ; MPU Fault Handler
                 DCD     BusFault_Handler          ; Bus Fault Handler
-                DCD     UsageFault_Handler        ; Usage Fault Handler
+                DCD     UsageFault_Handler   	  ; Usage Fault Handler
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
                 DCD     0                         ; Reserved
