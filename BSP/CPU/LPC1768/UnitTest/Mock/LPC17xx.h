@@ -375,4 +375,7 @@ static INLINE void NVIC_EnableIRQ(IRQn_Type IRQn __attribute__((__unused__)) )
 
 }
 
+SPLINT_SUPPRESS_UNUSED_ERROR
+static INLINE void NVIC_SystemReset(void) {  }
+
 #endif		/* __LPC17XX_H */

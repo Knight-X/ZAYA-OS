@@ -1,10 +1,10 @@
 /*******************************************************************************
 *
-* @file DrvCPUCoreInternal.h
+* @file Project_Config.h
 *
 * @author Murat Cakmak
 *
-* @brief CPU specific Internal Definitions
+* @brief Project Specific Configurations
 *
 * @see https://github.com/P-LATFORM/P-OS/wiki
 *
@@ -12,7 +12,7 @@
 *
 * The MIT License (MIT)
 *
-* Copyright (c) 2016 P-OS
+* Copyright (c) 2016 Platform
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -32,54 +32,20 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 * SOFTWARE.
 *
-******************************************************************************/
-
-#ifndef __DRV_CPUCORE_INTERNAL_H
-#define __DRV_CPUCORE_INTERNAL_H
+*******************************************************************************/
+#ifndef __PROJECT_CONFIG_H
+#define __PROJECT_CONFIG_H
 
 /********************************* INCLUDES ***********************************/
-#include "postypes.h"
 
 /***************************** MACRO DEFINITIONS ******************************/
 
+#define DEBUG_LEVEL							DEBUG_LEVEL_ERROR
+/* Debug Assertion */
+#define DEBUG_ENABLE_ASSERTS				0
+
 /***************************** TYPE DEFINITIONS *******************************/
 
-/**************************** FUNCTION PROTOTYPES *****************************/
+/*************************** FUNCTION DEFINITIONS *****************************/
 
-/*
- * Callback to get next TCB from Upper Layer (e.g. Kernel)
- */
-extern Drv_CPUCore_CSGetNextTCBCallback GetNextTCBCallBack;
-
-/*
- * Generic Hard Fault Handler while HW Hard Fault handler is compiler 
- * (armcc, gcc) dependent. HW handler calls this handler to process hard
- * fault. 
- */
-extern void HardFault_Handler(uint32_t stack[]);
-
-/******************************** VARIABLES ***********************************/
-
-/*************************** FUNCTION PROTOTYPES *****************************/
-/*
- * Starts Context Switching on CPU.
- *
- * [IMP] To be switched task (currentTCB) must be set before calling this
- * function.
- *
- * @param none
- *
- * @return none
- */
-INTERNAL void StartContextSwitching(void);
-
-/*
- * Jump to specified image.
- *
- * @param imageAddress Image address to jump
- *
- * @return none
- */
-INTERNAL void JumpToImage(reg32_t imageAddress);
-
-#endif /* __DRV_CPUCORE_INTERNAL_H */
+#endif	/* __PROJECT_CONFIG_H */

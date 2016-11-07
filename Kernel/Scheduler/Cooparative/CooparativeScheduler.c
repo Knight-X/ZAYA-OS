@@ -60,7 +60,7 @@ typedef struct
     /* Task pool for all user tasks */
     Application* taskPool;
     /* Task index to track current task in cooparative scheduling */
-    uint32_t taskIndex;
+    int32_t taskIndex;
 } CooparativeScheduler;
 /**************************** FUNCTION PROTOTYPES *****************************/
 
@@ -69,6 +69,7 @@ typedef struct
  * Cooparative scheduler internal data
  */
 PRIVATE CooparativeScheduler scheduler;
+
 /**************************** PRIVATE FUNCTIONS *******************************/
 
 /***************************** PUBLIC FUNCTIONS *******************************/
@@ -77,8 +78,19 @@ PRIVATE CooparativeScheduler scheduler;
  */
 PUBLIC void Scheduler_Init(Application* appList)
 {
+	Application* app = &appList[0];
+	int32_t i;
+	
     scheduler.taskPool = appList;
-    scheduler.taskIndex = 0;
+    scheduler.taskIndex = -1;
+	
+	for (i = 0; i < TASK_COUNT; i++)
+	{
+		app->state = AppState_Ready;
+		app->id = i;
+		
+		app++;
+	}
 }
 
 /*
@@ -88,15 +100,35 @@ PUBLIC void Scheduler_Init(Application* appList)
  */
 PUBLIC Application* Scheduler_GetNextApp(void)
 {
-    Application* nextApp;
-
-    /* Get next (ready) task from task pool */
-    nextApp = &scheduler.taskPool[scheduler.taskIndex];
-
-    /* Calculate task indexx for next yield */
-    scheduler.taskIndex = (scheduler.taskIndex + 1) % TASK_COUNT;
+    Application* nextApp = NULL;
+	Application* app;
+	uint32_t tryCount = TASK_COUNT;
+	
+	while (tryCount-- > 0)
+	{
+		/* Calculate task indexx for next yield */
+		scheduler.taskIndex = (scheduler.taskIndex + 1) % TASK_COUNT;
+		
+		/* Get next (ready) task from task pool */
+		app = &scheduler.taskPool[scheduler.taskIndex];
+		
+		if (app->state == AppState_Ready)
+		{
+			nextApp = app;
+			activeApp = nextApp;
+			break;
+		}
+	}
 
     return nextApp;
+}
+
+/*
+ * Terminates current active application
+ */
+PUBLIC void Scheduler_TerminateApplication(void)
+{
+	activeApp->state = AppState_Terminated;
 }
 
 #endif /* #if (OS_SCHEDULER == OS_SCHEDULER_COOPARATIVE) */

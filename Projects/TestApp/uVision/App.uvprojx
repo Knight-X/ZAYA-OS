@@ -7,7 +7,7 @@
 
   <Targets>
     <Target>
-      <TargetName>TestApp1</TargetName>
+      <TargetName>UserApp1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
       <pCCUsed>5060300::V5.06 update 3 (build 300)::ARMCC</pCCUsed>
@@ -417,7 +417,7 @@
             <File>
               <FileName>kernel_symbols</FileName>
               <FileType>3</FileType>
-              <FilePath>..\..\kernel\uVision\Objects\kernel_symbols</FilePath>
+              <FilePath>..\..\kernel\symbols\kernel_symbols</FilePath>
             </File>
           </Files>
         </Group>

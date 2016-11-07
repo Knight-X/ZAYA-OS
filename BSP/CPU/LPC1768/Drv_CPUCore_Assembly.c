@@ -86,8 +86,11 @@
 /***************************** TYPE DEFINITIONS *******************************/
 
 /**************************** FUNCTION PROTOTYPES *****************************/
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION reg32_t GetPSP(void);
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP);
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void);
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void);
 
-extern Drv_CPUCore_CSGetNextTCBCallback GetNextTCBCallBack;
 /******************************** VARIABLES ***********************************/
 
 extern TCB* currentTCB;
@@ -97,45 +100,28 @@ extern TCB* currentTCB;
 
 #if defined(__ARMCC_VERSION) /* ARMCC Assembly Area */
 
-/*
- * Returns Process Stack Pointer (PSP)
+/**
+ * ISR Function to Handle Hard Fault
+ * 
+ *  Stack type should be differantied for systems which uses Main (MSP) and 
+ *  Process (PSP) stack at same time. This handler function gets actual stack
+ *  and passes stack content to Hard Fault Process function. In this way,
+ *  stack content (e.g. PC which source of fault) can be dumped to output and 
+ * 	root cause of fault can be easily found from disassembly output of build. 
+ *  
  */
-PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION reg32_t GetPSP(void)
+ASSEMBLY_FUNCTION void SPOS_HardFault_Handler(void) 
 {
-    MRS r0, psp
-    BX lr
-}
-
-/*
- * Returns Process Stack Pointer (PSP)
- */
-PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP)
-{
-    MSR psp, r0
-    BX lr
-}
-
-/*
- * Stores actual values of register to preempted process' stack to use them
- * in next context switching
- */
-PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void)
-{
-    MRS r0, psp
-    STMDB r0!, {r4-r11}
-    MSR psp, r0
-    BX lr
-}
-
-/*
- * Loads next process's register values to CPU registers. 
- */
-PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void)
-{
-    MRS r0, psp
-    LDMFD r0!, {r4-r11}
-    MSR psp, r0
-    BX lr
+	/*
+	 * Check Bit 3 of LR to determine actual stack (MSP or PSP).
+	 */
+	TST lr, #4
+	ITE EQ
+	MRSEQ r0, MSP
+	MRSNE r0, PSP
+	
+	/* Call process funtion with actual stack pointer */
+	B __cpp(HardFault_Handler)
 }
 
 /*
@@ -196,6 +182,47 @@ ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
 }
 
 /*
+ * Returns Process Stack Pointer (PSP)
+ */
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION reg32_t GetPSP(void)
+{
+    MRS r0, psp
+    BX lr
+}
+
+/*
+ * Returns Process Stack Pointer (PSP)
+ */
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP)
+{
+    MSR psp, r0
+    BX lr
+}
+
+/*
+ * Stores actual values of register to preempted process' stack to use them
+ * in next context switching
+ */
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void)
+{
+    MRS r0, psp
+    STMDB r0!, {r4-r11}
+    MSR psp, r0
+    BX lr
+}
+
+/*
+ * Loads next process's register values to CPU registers. 
+ */
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void)
+{
+    MRS r0, psp
+    LDMFD r0!, {r4-r11}
+    MSR psp, r0
+    BX lr
+}
+
+/*
  * Switchies Context to first task
  *
  */
@@ -216,7 +243,6 @@ ASSEMBLY_FUNCTION void SwitchToFirstTask(void)
 	msr	basepri, r0
 	ldr r14, =LOAD_EXEC_RETURN_CODE		/* Load exec return code. */
 	bx r14
-	nop
 }
 
 /*
@@ -308,24 +334,43 @@ ASSEMBLY_FUNCTION void JumpToImage(uint32_t imageAddress)
 }
 
 /*
- * Triggers a context switch
+ * Triggers a context switch.
  * 
  */
-void Drv_CPUCore_CSYield(void)
+void Drv_CPUCore_CSYield(bool privileged)
 {
-	/* 
-	 * For a privileged system we could trigger the PendSV interrupt using 
-	 * " Interrupt Control and State Register (ICSR)" for Context
-	 * Switching. 
-	 * But for an ecosystem which includes also unprivileged process's, 
-	 * it is forbidden to access ICSR register by unprivileged process. 
-	 * 
-	 * Therefore, we need to make specific Super-Visor Call to trigger PendSV
-	 * for context switching. 
-	 */
-	__asm
+	if (privileged)
 	{
-		svc #CPUCORE_SVCALL_YIELD
+		/*
+		 * This is a bit hacky code and may need revisit. 
+		 * In case of privileged mode, SVC Call did not work so when we called
+		 * this function we get "Unknown Instruction" exception in privileged 
+		 * mode. (E.g. when Kernel needs to force a context switching)
+		 * While privileged mode can access SCB->ICSR mode, we can directly 
+		 * trigger PendSV register for Context Switching. 
+		 * 
+		 * On the other hand, caller of this function (Kernel or Unpriviliged 
+		 * user app) should be aware of its mode (Priv or unpriv)
+		 * 
+		 */
+		SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
+	}
+	else
+	{
+		/* 
+		 * For a privileged system we could trigger the PendSV interrupt using 
+		 * " Interrupt Control and State Register (ICSR)" for Context
+		 * Switching. 
+		 * But for an ecosystem which includes also unprivileged process's, 
+		 * it is forbidden to access ICSR register by unprivileged process. 
+		 * 
+		 * Therefore, we need to make specific Super-Visor Call to trigger PendSV
+		 * for context switching. 
+		 */
+		__asm
+		{
+			svc #CPUCORE_SVCALL_YIELD
+		}
 	}
 }
 

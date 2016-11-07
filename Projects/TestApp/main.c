@@ -34,6 +34,11 @@ static void delayMs(uint32_t delayInMs)
 }
 
 /***************************** PUBLIC FUNCTIONS *******************************/
+		
+int div(int a, int b)
+{
+	return a / b;
+}
 
 int heartBeat()
 {
@@ -48,6 +53,12 @@ int heartBeat()
         delayMs(1000);
 
 		OS_Yield();
+
+		{
+			int a = 5, b = 0;
+			int c;
+			c = div(a, b);
+		}
     }
 }
 int main()

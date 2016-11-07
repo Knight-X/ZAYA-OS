@@ -36,15 +36,21 @@
 #ifndef __PROJECT_CONFIG_H
 #define __PROJECT_CONFIG_H
 
-/********************************* INCLUDES ***********************************/
-
 /***************************** MACRO DEFINITIONS ******************************/
 
+#define DEBUG_LEVEL							DEBUG_LEVEL_ERROR
+
+#define DEBUG_OUTPUT 						DEBUG_OUTPUT_UVISION
+
 /* Debug Assertion */
-#define ENABLE_DEBUG_ASSERT					0
+#define DEBUG_ENABLE_ASSERTS				0
 
 /***************************** TYPE DEFINITIONS *******************************/
 
 /*************************** FUNCTION DEFINITIONS *****************************/
+
+/************************ OVERRIDDEN CONFIGURATIONS ***************************/
+
+/********************************* INCLUDES ***********************************/
 
 #endif	/* __PROJECT_CONFIG_H */

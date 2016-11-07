@@ -42,7 +42,29 @@
 /***************************** MACRO DEFINITIONS ******************************/
 
 /***************************** TYPE DEFINITIONS *******************************/
-typedef void(*Drv_CPUCore_TaskStartPoint)(void* arg);
+
+/*
+ * Exception Types
+ * 
+ */
+typedef enum
+{
+	Exception_NoException = 0,
+	
+	/*
+	 * Following exceptions specify generic exceptions. 
+	 * It means exact type of exception is not extracted. 
+	 */
+	Exception_HardFault,
+	Exception_MemoryFault, 
+	Exception_BusFault,
+	Exception_UsageFault,
+	
+	/*
+	 * Exact types of Exceptions
+	 */
+	Exception_DivideByZero = 10,
+} Exception;
 
 /*
  * Task Control Block (TCB)
@@ -84,6 +106,42 @@ typedef struct
  */
 typedef TCB* (*Drv_CPUCore_CSGetNextTCBCallback)(void);
 
+/*
+ * Prinout Callback
+ *  When upper layer decided to print stack content, it also provide a printer
+ *  function to dump stack content to debug output. In this way, upper layer 
+ *  can forward debug messages to suitable output environment. 
+ * 
+ * @param message Message to print out
+ */
+typedef void (*PrintOutCallback)(uint8_t* message);
+
+/*
+ * Stack dumper callback. 
+ * When an exception is occurred, Exception Management management also provides
+ * callback to dump stack content to a debug output. 
+ *
+ * @param printOut Provided (by upper layer) method to use dumping stack. 
+ */
+typedef void (*StackDumpCallback)(PrintOutCallback printOut);
+
+/*
+ * Exception Callback.
+ *  Upper layer uses this callback type to register itself to be informed about
+ *  exceptions. 
+ *  Exception management interface, provides exception type and helper value. 
+ *  This function also provides a stack dumper function. 
+ *  Upper layer can call this function to dump stack. 
+ *
+ * @param exception Type of Exception
+ * @param val When exception is an exact type (like DivByZero), value is not 
+ *        meaningfull and probably just zero. But for general exception type, 
+ * 		  upper layer can use this value to debug exception. It keeps register 
+ *		  value. 
+ * @param stackDump Function to dump stack content 
+ */
+typedef void (*ExceptionCallback)(Exception exception, uint32_t val, StackDumpCallback stackDump);
+
 /*************************** FUNCTION DEFINITIONS *****************************/
 /**
 * Initializes actual CPU and its components/peripherals.
@@ -92,6 +150,24 @@ typedef TCB* (*Drv_CPUCore_CSGetNextTCBCallback)(void);
 * @return none
 */
 void Drv_CPUCore_Init(void);
+
+/*
+ * Resets Devices
+ *
+ * @param none
+ * @param none
+ *
+ */
+void Drv_CPUCore_ResetDevice(void);
+
+/*
+ * Initializes Exception Management
+ *
+ * @param excCallback Client Callback to handle exception
+ * @param none
+ *
+ */
+void Drv_CPUCore_InitializeExceptions(ExceptionCallback excCallback);
 
 /*
  * Halts all system.
@@ -137,12 +213,12 @@ void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNe
 /*
  * Switches running task to provided new TCB
  *
- * @param none
+ * @param privileged Actual State (priv or unpriv) of system.
  *
  * @return none
  *
  */
-void Drv_CPUCore_CSYield(void);
+void Drv_CPUCore_CSYield(bool privileged);
 
 /*
  * Initializes task stack
