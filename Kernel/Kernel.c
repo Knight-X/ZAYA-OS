@@ -62,11 +62,22 @@ typedef struct
 
 #if APP_TEST_MODE
 
-PRIVATE AppImageInfo* userApps[NUM_OF_USER_TASKS] =
+typedef struct
 {
-	/* Tries to statically allocated images */
-	(AppImageInfo*)0x10000,
-	(AppImageInfo*)0x20000
+	struct
+	{
+		reg32_t codeAddress;
+		uint32_t codeSize;
+		reg32_t ramAddress;
+		uint32_t ramSize;
+	} sections;
+	AppImageInfo* imageInfo;
+} TestImageData;
+
+PRIVATE TestImageData userApps[NUM_OF_USER_TASKS] =
+{
+	{ { 0x10000, 0x1000, 0x10004000, 0x1000 }, (AppImageInfo*)0x10000 },
+	{ { 0x20000, 0x1000, 0x10005000, 0x1000 }, (AppImageInfo*)0x20000 }
 };
 
 #endif
@@ -83,7 +94,7 @@ INTERNAL Application* activeApp;
  */
 PRIVATE void printOut(uint8_t* message)
 {
-	DEBUG_PRINTF((char*)message);
+	DEBUG_PRINT_ERROR((char*)message);
 }
 
 /*
@@ -91,7 +102,7 @@ PRIVATE void printOut(uint8_t* message)
  */
 PRIVATE void exceptionHandler(Exception exception, uint32_t val, StackDumpCallback stackDump)
 {
-	DEBUG_PRINTF("\nERR Exc:%d-%d", exception, val);
+	DEBUG_PRINT_ERROR("\nERR Exc:%d-%d", exception, val);
 	
 	if (stackDump != NULL)
 	{
@@ -139,12 +150,21 @@ PRIVATE void exceptionHandler(Exception exception, uint32_t val, StackDumpCallba
 PRIVATE ALWAYS_INLINE void InitializeNewTask(Application* app)
 {
 	AppImageInfo* info = app->info;
+	TCB* tcb = &app->tcb;
 
 	/* User application always work in unprivileged mode */
-	app->tcb.flags.privileged = false;
+	tcb->flags.privileged = false;
 	
 	/* Initialize TCB of User Application */
-	app->tcb.topOfStack = Kernel_InitializeTCB(info->image.sp, info->image.pc);
+	tcb->topOfStack = Kernel_InitializeTCB(info->image.sp, info->image.pc);
+
+#if !APP_TEST_MODE
+	/* Fill TCB with user application regions */
+	tcb->codeStartAddress = info->metaDataHeader.codeAddress;
+	tcb->codeSize = info->metaDataHeader.codeSize;
+	tcb->dataStartAddress = info->metaDataHeader.ramAddress;
+	tcb->dataSize = info->metaDataHeader.ramSize;
+#endif
 }
 
 /**
@@ -166,9 +186,7 @@ PRIVATE TCB* SchedulerGetNextApp(void)
  * @return none
  */
 PRIVATE ALWAYS_INLINE void StartScheduling(void)
-{
-	Application* firstApp = Scheduler_GetNextApp();
-	
+{	
 	/* 
 	 * Kernel finalized all initial tasks. 
 	 * Now exit from Super Visor Mode before switching to User App
@@ -176,7 +194,7 @@ PRIVATE ALWAYS_INLINE void StartScheduling(void)
 	kernelSettings.flags.superVisorMode = false;
 
 	/* Start context switching using first task and TCB provider Callback */
-	Kernel_StartContextSwitching(&firstApp->tcb, SchedulerGetNextApp);
+	Kernel_StartContextSwitching(SchedulerGetNextApp);
 }
 
 /**
@@ -195,7 +213,18 @@ PRIVATE ALWAYS_INLINE void InitializeAllTasks(void)
 	for (taskIndex = 0; taskIndex < NUM_OF_USER_TASKS; taskIndex++, app++)
 	{
 #if APP_TEST_MODE
-		app->info = userApps[taskIndex];
+		{
+			TCB* tcb;
+			TestImageData* tst = &userApps[taskIndex];
+			app->info = userApps[taskIndex].imageInfo;
+			
+			tcb = &app->tcb;
+			
+			tcb->codeStartAddress = tst->sections.codeAddress;
+			tcb->codeSize = tst->sections.codeSize;
+			tcb->dataStartAddress = tst->sections.ramAddress;
+			tcb->dataSize = tst->sections.ramSize;
+		}		
 #else
 		#error "Should be implemented"
 #endif
@@ -228,9 +257,16 @@ PRIVATE ALWAYS_INLINE void InitializeHW(void)
 	
 	/* Initialize Exception Management */
 	Kernel_InitializeExceptions(exceptionHandler);
+	
+	#if APP_TEST_MODE
+	Kernel_ActivateMemoryProtection(0xF000, 0x1000, 0, 0);
+	#else
+	Kernel_ActivateMemoryProtection();
+	#endif
 }
 
 /***************************** PUBLIC FUNCTIONS *******************************/
+LOCATE_AT(void OS_Yield(void), "0xF000");
 PUBLIC void OS_Yield(void)
 {
 	/* Just trigger Low Level Yield */

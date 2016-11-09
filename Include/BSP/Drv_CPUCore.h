@@ -48,6 +48,9 @@ typedef enum
 	 * Exact types of Exceptions
 	 */
 	Exception_DivideByZero = 10,
+	Exception_CodeAccessViolation,
+	Exception_DataAccessViolation,
+	Exception_AccessViolation
 } Exception;
 
 /*
@@ -70,6 +73,12 @@ typedef struct
 	 *	a TCB to context switcher mechanism, HW looks for first address.
 	 */
 	reg32_t* topOfStack;
+	
+	uint32_t dataStartAddress;
+	uint32_t dataSize;
+	
+	uint32_t codeStartAddress;
+	uint32_t codeSize;
 	
 	/*
 	 * Task Specific Flags
@@ -122,7 +131,26 @@ typedef void (*StackDumpCallback)(PrintOutCallback printOut);
  *        meaningfull and probably just zero. But for general exception type, 
  * 		  upper layer can use this value to debug exception. It keeps register 
  *		  value. 
- * @param stackDump Function to dump stack content 
+ * @param stackDump Function to dump stack content
+ *
+ * @param none
+ *
+ * NOTE : How to debug exception using provided data
+ * 
+ *        - Exception_DivideByZero : 
+ * 			See stuck dump in debug output and check PC (Program Counter) value.
+ * 			It addresses code which causes fault (div by zero)
+ * 
+ *		  - Exception_CodeAccessViolation : 
+ * 			See stuck dump in debug output and check PC (Program Counter) value.
+ * 			PC shows address of unauthorized code (probably function address)
+ * 
+ *		  - Exception_DataAccessViolation : 
+ *			Check 'val' value for unathorized data address for unpriviliged 
+ *			app. Check also PC value in stuck dump to get where makes this 
+ *			access.
+ *						
+ * 
  */
 typedef void (*ExceptionCallback)(Exception exception, uint32_t val, StackDumpCallback stackDump);
 
@@ -184,7 +212,6 @@ void Drv_CPUCore_DisableInterrupts(void);
  * Starts Context Switching
  *  Configures HW for CS and starts first task
  *
- * @param initialTCB Initial (First) TCB (Task) for Context Switching
  * @param getNextTCBCB Client code must provide callback to provide TCB for
  *        context switching. When a context switching is occurred, this function
  *		  is called.
@@ -192,7 +219,7 @@ void Drv_CPUCore_DisableInterrupts(void);
  *
  * @return none
  */
-void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNextTCBCB);
+void Drv_CPUCore_CSStart(Drv_CPUCore_CSGetNextTCBCallback getNextTCBCB);
 
 /*
  * Switches running task to provided new TCB
@@ -232,5 +259,24 @@ void Drv_CPUCore_JumpToImage(reg32_t imageAddress);
  * @return CPU Core Clock Frequency
  */
 uint32_t Drv_CPUCore_GetCPUFrequency(void);
+
+/*
+ * Initializes MPU for Unauthorized Access Control
+ *  Basically, restricts all resource (flash, ram, and peripherals (e.g. GPIO)) 
+ *  accessess for privilged mode. 
+ *  In default, unprivileged application cannot access anywhere. 
+ *  
+ *  MPU interface also provides a shared area for system calls from 
+ *  Unprivileged applications. Supervisor appplication (mostly kernel), 
+ *  needs to specify shared areas (between kernel and unprivileged apps)
+ *  during MPU initialization. 
+ *
+ *  @param sharedCodeStart Address of Shared Code Section
+ *  @param sharedCodeSize  Size of Shared Code Section
+ *  @param sharedRAMStart  Address of Shared RAM Section
+ *  @param sharedRAMSize   Size of Shared RAM Section
+ */
+void Drv_CPUCore_InitializeMPU(reg32_t sharedCodeStart, uint32_t sharedCodeSize,
+							   reg32_t sharedRAMStart,  uint32_t sharedRAMSize);
 
 #endif	/* __DRV_CPUCORE_H */

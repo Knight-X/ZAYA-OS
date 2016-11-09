@@ -39,7 +39,7 @@ int heartBeat()
 {
     while (1)
     {
-		Board_LedOff(2);
+		Board_LedOff(2);		
         delayMs(1000);
 
 		OS_Yield();
@@ -50,6 +50,7 @@ int heartBeat()
 		OS_Yield();
     }
 }
+
 int main()
 {
     Board_LedInit();

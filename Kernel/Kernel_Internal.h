@@ -87,6 +87,8 @@
 
 /* Wrapper function definition to initialize Exception Management */
 #define Kernel_InitializeExceptions		Drv_CPUCore_InitializeExceptions
+			
+#define Kernel_ActivateMemoryProtection Drv_CPUCore_InitializeMPU
 
 /* Wrapper function definition to start context switching */
 #define Kernel_StartContextSwitching    Drv_CPUCore_CSStart
@@ -131,9 +133,10 @@ typedef enum
  */
 typedef struct
 {
-	reg32_t imageSize;
-	reg32_t imageOffset;
-	reg32_t stackSize;
+	reg32_t codeAddress;
+	uint32_t codeSize;
+	reg32_t ramAddress;
+	uint32_t ramSize;
 } AppImageMetaDataHeader;
 
 /*

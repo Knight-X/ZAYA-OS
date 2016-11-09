@@ -15,7 +15,6 @@
 
   <project>
     <PathAndName>..\TestApp\uVision\App.uvprojx</PathAndName>
-    <NodeIsExpanded>1</NodeIsExpanded>
   </project>
 
   <project>

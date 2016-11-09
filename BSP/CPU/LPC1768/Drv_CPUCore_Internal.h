@@ -66,4 +66,24 @@ INTERNAL void StartContextSwitching(void);
  */
 INTERNAL void JumpToImage(reg32_t imageAddress);
 
+/*
+ * Sets (Releases) User Application Code Section. 
+ * 
+ * @param codeStart User App Code Region Start Address
+ * @param codeSize User App Code Region Start Size
+ *
+ * @return none
+ */
+void MPUSetUserCodeSection(reg32_t codeStart, uint32_t codeSize);
+
+/*
+ * Sets (Releases) User Application RAM Section. 
+ * 
+ * @param ramStart User App RAM Region Start Address
+ * @param ramSize User App RAM Region Start Size
+ *
+ * @return none
+ */
+void MPUSetUserRAMSection(reg32_t ramStart, uint32_t ramSize);
+
 #endif /* __DRV_CPUCORE_INTERNAL_H */

@@ -46,6 +46,12 @@
 /* Flag to enable DivByZero Exception */
 #define REG_SCB_CFSR_USGFAULT_DIVBYZERO_Msk			(1<<25)
 
+#define REG_SCB_CFSR_USGFAULT_IACCVIOL_Msk			(1<<0)
+#define REG_SCB_CFSR_USGFAULT_DACCVIOL_Msk			(1<<1)
+#define REG_SCB_CFSR_USGFAULT_MUNSTKERR_Msk			(1<<3)
+#define REG_SCB_CFSR_USGFAULT_MSTKERR_Msk			(1<<4)
+#define REG_SCB_CFSR_USGFAULT_MMARVALID_Msk			(1<<7)
+
 /***************************** TYPE DEFINITIONS *******************************/
 /* 
  * Stack content (Registers) for Cortex M3. 
@@ -154,12 +160,35 @@ PRIVATE ALWAYS_INLINE void processBusFault(Exception* exc, reg32_t* val)
  */
 PRIVATE ALWAYS_INLINE void processMemFault(Exception* exc, reg32_t* val)
 {
-	/*
-	 * Not processed in detail.
-	 * TODO shoud be revisited. 
+	/* 
+	 * Check whether Memory Management Fault Adddress Register is valid. 
+	 * if so, SCB->MMFAR also provides additional info (e.g. unauthorized 
+	 * address) for root cause of exception
 	 */
-	*exc = Exception_MemoryFault;
-	*val = ((SCB->CFSR & SCB_CFSR_MEMFAULTSR_Msk) >> SCB_CFSR_MEMFAULTSR_Pos);
+	if (SCB->CFSR & REG_SCB_CFSR_USGFAULT_MMARVALID_Msk)
+	{
+		*val = SCB->MMFAR;
+	}
+	else
+	{
+		*val = 0;
+	}
+	
+	if (SCB->CFSR & REG_SCB_CFSR_USGFAULT_IACCVIOL_Msk)
+	{
+		/* App tries to access an unauthorized code block */
+		*exc = Exception_CodeAccessViolation;
+	}
+	else if (SCB->CFSR & REG_SCB_CFSR_USGFAULT_DACCVIOL_Msk)
+	{
+		/* App tries to access an unauthorized RAM block */
+		*exc = Exception_DataAccessViolation;		
+	}
+	else
+	{
+		*exc = Exception_AccessViolation;
+		*val = ((SCB->CFSR & SCB_CFSR_MEMFAULTSR_Msk) >> SCB_CFSR_MEMFAULTSR_Pos);
+	}
 }
 
 /*
