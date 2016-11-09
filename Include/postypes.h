@@ -66,12 +66,13 @@
 
 #elif defined(__ARMCC_VERSION)
 
-	#define INLINE                  //__inline
-	#define ALWAYS_INLINE           //__forceinline
-	#define ASSEMBLY_FUNCTION       __asm
-	#define PACKED					__packed
-    #define TYPEDEF_STRUCT_PACKED	PACKED typedef struct
-    #define NO_INLINE               __attribute__((noinline))
+	#define INLINE                  			__inline
+	#define ALWAYS_INLINE           			__forceinline
+	#define ASSEMBLY_FUNCTION       			__asm
+	#define PACKED								__packed
+    #define TYPEDEF_STRUCT_PACKED				PACKED typedef struct
+    #define NO_INLINE               			__attribute__((noinline))
+	#define LOCATE_AT(symbol, addr)				symbol __attribute__((section(".ARM.__at_" ##addr)))
 
 #else /* GCC */
 

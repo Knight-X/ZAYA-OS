@@ -91,6 +91,8 @@ PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void SetPSP(reg32_t uiPSP);
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void StoreRegisterToPSP(void);
 PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void);
 
+PRIVATE ALWAYS_INLINE void SwitchToFirstTask(void);
+
 /******************************** VARIABLES ***********************************/
 
 extern TCB* currentTCB;
@@ -144,6 +146,15 @@ void POS_PendSV_Handler(void)
 	/* Set process stack (PSP) to new application stack */
 	SetPSP((reg32_t)currentTCB->topOfStack);
 	
+	/*
+	 * We need to release Code and RAM section of user application. 
+	 * Following functions overrides following region information. 
+	 * In this way, active task is able to access only, its Code and RAM section,
+	 * and can not access to Kernel and other user application resources. 
+	 */
+	MPUSetUserCodeSection(currentTCB->codeStartAddress, currentTCB->codeSize);
+	MPUSetUserRAMSection(currentTCB->dataStartAddress, currentTCB->dataSize);
+	
 	/* 
 	 * Set control register. 
 	 *  No need to set Stack Pointer (PSP/MSP) because "In Handler mode this bit
@@ -179,6 +190,44 @@ ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
 
 	/* Call SVCHandler function to process SVC Call */
 	B SVCHandler
+}
+
+/*
+ * SVC Request Handler
+ *  Handles and processes specific Super-Visor Calls
+ */
+void SVCHandler(uint32_t * svc_args)
+{
+	uint32_t svc_number;
+
+	/*
+     * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s02s07.html
+     * Stack contains:    * r0, r1, r2, r3, r12, r14, the return address and xPSR
+	 * First argument (r0) is svc_args[0]
+	 */
+	svc_number = ((char *)svc_args[6])[-2];
+
+	switch(svc_number)
+	{
+		case CPUCORE_SVCALL_START_CS:
+			SwitchToFirstTask();
+			break;
+		case CPUCORE_SVCALL_YIELD:
+			/* Set a PendSV to request a context switch. */
+			SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
+
+			/*
+			 * Barriers are normally not required but do ensure the code is completely
+			 * within the specified behavior for the architecture. (Note From FreeRTOS)
+			 */
+			__DMB();
+			break;
+		case CPUCORE_SVCALL_RAISE_PRIVILEGE:
+			/* Not defined yet */
+			break;
+		default:
+			break;
+	}
 }
 
 /*
@@ -223,64 +272,40 @@ PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSP(void)
 }
 
 /*
- * Switchies Context to first task
- *
+ * Loads next process's register values to CPU registers for the first time.
+ * (First context switching)
  */
-ASSEMBLY_FUNCTION void SwitchToFirstTask(void)
+PRIVATE ALWAYS_INLINE ASSEMBLY_FUNCTION void LoadRegisterFromPSPForFirstTime(void)
 {
-	extern currentTCB;
-
-	PRESERVE8
-
-	ldr	r3, =currentTCB		/* Restore the context. */
-	ldr r1, [r3]			/* Get the currentTCB address. */
-	ldr r0, [r1]			/* The first item in currentTCB is the task top of stack. */
-	
-	ldmia r0!, {r4-r11}		/* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
-	msr psp, r0				/* Restore the task stack pointer. */
-	isb
-	mov r0, #0
-	msr	basepri, r0
-	ldr r14, =LOAD_EXEC_RETURN_CODE		/* Load exec return code. */
-	bx r14
+	MRS r0, psp
+	LDMFD r0!, {r4-r11}
+	MSR psp, r0
+	ISB
+	MOV R0, #0
+	MSR	basepri, r0
+	LDR R14, =LOAD_EXEC_RETURN_CODE		/* Load exec return code. */
+	bx R14
 }
 
 /*
- * SVC Request Handler
- *  Handles and processes specific Super-Visor Calls
+ * Switchies Context to first task
+ *
  */
-void SVCHandler(uint32_t * svc_args)
+PRIVATE ALWAYS_INLINE void SwitchToFirstTask(void)
 {
-	uint32_t svc_number;
-
-	/*
-     * http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dai0179b/ar01s02s07.html
-     * Stack contains:    * r0, r1, r2, r3, r12, r14, the return address and xPSR
-	 * First argument (r0) is svc_args[0]
-	 */
-	svc_number = ((char *)svc_args[6])[-2];
-
-	switch(svc_number)
-	{
-		case CPUCORE_SVCALL_START_CS:
-			SwitchToFirstTask();
-			break;
-		case CPUCORE_SVCALL_YIELD:
-			/* Set a PendSV to request a context switch. */
-			SCB->ICSR = (reg32_t)SCB_ICSR_PENDSVSET_Msk;
-
-			/*
-			 * Barriers are normally not required but do ensure the code is completely
-			 * within the specified behavior for the architecture. (Note From FreeRTOS)
-			 */
-			__DMB();
-			break;
-		case CPUCORE_SVCALL_RAISE_PRIVILEGE:
-			/* Not defined yet */
-			break;
-		default:
-			break;
-	}
+	/* Get the first TCB from Upper Layer (e.g. Kernel) */
+	currentTCB = GetNextTCBCallBack();
+	
+	/* Set process stack (PSP) to new application stack */
+	SetPSP((reg32_t)currentTCB->topOfStack);
+	
+	MPUSetUserCodeSection(currentTCB->codeStartAddress, currentTCB->codeSize);
+	MPUSetUserRAMSection(currentTCB->dataStartAddress, currentTCB->dataSize);
+	
+	__set_CONTROL((currentTCB->flags.privileged == 0));
+	
+	/* Load registers using new application registers which already kept in its stack */
+	LoadRegisterFromPSPForFirstTime();
 }
 
 /*
@@ -312,6 +337,7 @@ ASSEMBLY_FUNCTION void StartContextSwitching(void)
 	
 	/* Call SVC to start the first task. */
 	svc #CPUCORE_SVCALL_START_CS
+	nop
 }
 
 /*
@@ -337,6 +363,7 @@ ASSEMBLY_FUNCTION void JumpToImage(uint32_t imageAddress)
  * Triggers a context switch.
  * 
  */
+LOCATE_AT(void Drv_CPUCore_CSYield(bool privileged), "0xF100");
 void Drv_CPUCore_CSYield(bool privileged)
 {
 	if (privileged)
@@ -444,19 +471,7 @@ ASSEMBLY_FUNCTION void POS_SVC_Handler(void)
 {
 	__asm volatile
 	(
-		"	ldr	r3, currentTCBConst2			\n" /* Restore the context. */
-		"	ldr r1, [r3]						\n" /* Use currentTCBConst2 to get the currentTCB address. */
-		"	ldr r0, [r1]						\n" /* The first item in currentTCB is the task top of stack. */
-		"	ldmia r0!, {r4-r11}					\n" /* Pop the registers that are not automatically saved on exception entry and the critical nesting count. */
-		"	msr psp, r0							\n" /* Restore the task stack pointer. */
-		"	isb									\n"
-		"	mov r0, #0 							\n"
-		"	msr	basepri, r0						\n"
-		"	orr r14, #0xd						\n"
-		"	bx r14								\n"
-		"										\n"
-		"	.align 4							\n"
-		"currentTCBConst2: .word currentTCB		\n"
+
 	);
 }
 

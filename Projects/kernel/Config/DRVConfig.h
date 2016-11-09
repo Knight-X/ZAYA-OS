@@ -43,7 +43,7 @@
 /***************************** TYPE DEFINITIONS *******************************/
 
 #ifndef ENABLE_STACK_DUMP
-#define ENABLE_STACK_DUMP								(1)
+#define ENABLE_STACK_DUMP								(0)
 #endif /* ENABLE_STACK_DUMP */
 
 /*

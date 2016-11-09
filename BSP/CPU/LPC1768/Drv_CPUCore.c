@@ -191,16 +191,14 @@ void Drv_CPUCore_DisableInterrupts(void)
  * Starts Context Switching
  *  Configures HW for CS and starts first task
  *  
- * @param initialTCB Initial (First) TCB (Task) for Context Switching
+ * @param getNextTCB Callback which provided by upper layer to get next TCB
  *
  * @return none
  */
-void Drv_CPUCore_CSStart(TCB* initialTCB, Drv_CPUCore_CSGetNextTCBCallback getNextTCB)
+void Drv_CPUCore_CSStart(Drv_CPUCore_CSGetNextTCBCallback getNextTCB)
 {
 	GetNextTCBCallBack = getNextTCB;
 
-	/* For the first time let's assign current and next task using initial TCB */
-    currentTCB = initialTCB;
     
 	/* Disable interrupts to avoid any interruption during Context Switching Initialization */
 	__disable_irq();
