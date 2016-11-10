@@ -5,10 +5,18 @@ import sys
 import config
 from shutil import copyfile
 import subprocess
+import win32api
+import time
 
-import sys, string, os
+# TODO 
+# 1. No need for intel hex file. We can create our signed intelhex using binary file. 
+# 2. While we are modifiying intel hex file (until fix previous TODO item), user app intel hex file also tries to write CRP (:04000005000102CD27), 
+#	 and user app should not write here and it can be problem if bootloader or kernel write different value to CRP. 
 
 print ('Image Creator Started')
+
+mypath = os.path.abspath(__file__)
+mydir = os.path.dirname(mypath)
 
 rootPath = '..\..\..'
 imageName = sys.argv[1]
@@ -16,74 +24,28 @@ projectPath = rootPath + '\\Projects\\' + imageName + '\\uVision'
 projectOutPath = projectPath + '\\Objects'
 outDirectory = rootPath + '\\out\\Projects\\' + imageName
 
-print projectOutPath
-
 intelHexFilePath = projectOutPath + '\\' + imageName + '.hex'
+intelHEXOutFilePath = outDirectory + '\\' + imageName + '.hex'
+
 binaryFilePath = projectOutPath + '\\' + imageName + '.bin'
-
-if not os.path.exists(outDirectory):
-    os.makedirs(outDirectory)
-
-copyfile(intelHexFilePath, outDirectory + '\\' + imageName + '.hex')
-copyfile(binaryFilePath, outDirectory + '\\' + imageName + '.bin')
-
-rsaSignCmd = 'rsa_sign.exe ' + outDirectory + '\\' + imageName + '.bin'
-print rsaSignCmd
-#subprocess.call(rsaSignCmd, stdin=None, stdout=None, stderr=None, shell=False)
-#os.system( rsaSignCmd )
-#os.system(r'"rsa_sign.exe"')
-#subprocess.Popen([r"rsa_sign.exe " + outDirectory + '\\' + imageName + '.bin'])
-
-#os.system('"rsa_sign.exe"')
-#subprocess.call(['C:\Program Files\Notepad++\\notepad++.exe', 'D:\\test.txt'])
-#subprocess.call([r"rsa_sign.exe"])
-
-
-mypath = os.path.abspath(__file__)
-mydir = os.path.dirname(mypath)
-start = os.path.join(mydir, "rsa_sign.exe " + outDirectory + '\\' + imageName + '.bin ' + mydir + '\\rsa_priv.txt')
-#subprocess.call([sys.executable, start])
-
-import win32api
-win32api.WinExec(start)
-
-print start
-
-#if not os.path.exists('D:\\dev\\SP-OS\\Environment\\BuildSystem\\ImageSign\\rsa_sign.exe'):
-#	print "DOES NOT !!!!!!!"
-#os.system(r'"rsa_sign.exe"')
-
-
-#win32api.WinExec('rsa_sign.exe')
-
-#os.system('"D:\dev\SP-OS\Environment\BuildSystem\ImageSign\rsa_sign.exe"')
-
-signatureFilePath = config.imageMetaDataHeader['signatureFilePath']
-codeOffset = config.imageMetaDataHeader['codeOffset']
-codeSize = config.imageMetaDataHeader['codeSize']
-ramOffset = config.imageMetaDataHeader['ramOffset']
-ramSize = config.imageMetaDataHeader['ramSize']
+binaryOutFilePath = outDirectory + '\\' + imageName + '.bin'
 
 if (os.path.exists(intelHexFilePath) == False):
 	print ' Image Intel HEX File does not exist : ' + intelHexFilePath
 	sys.exit()
 
-#if (os.path.exists(binaryFilePath) == False):
-#	print ' Image Binary File does not exist : ' + binaryFilePath
-#	sys.exit()
-
-if (os.path.exists(signatureFilePath) == False):
-	print ' Image Signature File does not exist : ' + signatureFilePath
+if (os.path.exists(binaryFilePath) == False):
+	print ' Image Binary File does not exist : ' + binaryFilePath
 	sys.exit()
 
-intelHexSourceFile = open(intelHexFilePath)
-intelHexDestinationFile = open(intelHexFilePath + ".signed", "w")
-signatureFile = open(signatureFilePath)
+if not os.path.exists(outDirectory):
+    os.makedirs(outDirectory)
+	
+copyfile(intelHexFilePath, intelHEXOutFilePath)
+copyfile(binaryFilePath, binaryOutFilePath)
 
-# TODO 
-# 1. No need for intel hex file. We can create our signed intelhex using binary file. 
-# 2. While we are modifiying intel hex file (until fix previous TODO item), user app intel hex file also tries to write CRP (:04000005000102CD27), 
-#	 and user app should not write here and it can be problem if bootloader or kernel write different value to CRP. 
+intelHexSourceFile = open(intelHEXOutFilePath)
+intelHexDestinationFile = open(intelHEXOutFilePath + ".signed", "w")
 
 def int_to_bytes(val, num_bytes):
     return [(val & (0xff << pos*8)) >> pos*8 for pos in range(num_bytes)]
@@ -99,11 +61,10 @@ def get_intel_hex_line(dataLength, address, recordType, lineData):
 	
 	crc = ((~crc) + 1) & 0xFF
 	
-	line += '{:02X}\r\n'.format(crc)
-	
+	line += '{:02X}\n'.format(crc)
 	return line
 
-def writeImageSignature(offset):
+def writeImageSignature(signatureFile, offset):
 	signLines = signatureFile.readlines()
 	for signLine in signLines:
 		offset += 16
@@ -113,7 +74,7 @@ def writeImageSignature(offset):
 		line = get_intel_hex_line(16, offset, 0, signLineBytes)
 		intelHexDestinationFile.write(line)
 
-def writeImageMetaData(codeOffset, codeSize, ramOffset, ramSize):
+def writeImageMetaData(signatureFile, codeOffset, codeSize, ramOffset, ramSize):
 	b = [0xFF] * 16
 
 	b[0:4] = int_to_bytes(codeOffset, 4)
@@ -124,9 +85,8 @@ def writeImageMetaData(codeOffset, codeSize, ramOffset, ramSize):
 	offset = 0
 
 	line = get_intel_hex_line(16, offset, 0, b[0:16])
-	intelHexDestinationFile.write(line) 
-	# print line
-
+	intelHexDestinationFile.write(line)
+	
 	lineIndex = 0
 	b = [0xFF] * 16
 
@@ -135,19 +95,33 @@ def writeImageMetaData(codeOffset, codeSize, ramOffset, ramSize):
 		line = get_intel_hex_line(16, offset, 0, b)
 		lineIndex = lineIndex + 1
 		intelHexDestinationFile.write(line)
-		#print line
 	
-	writeImageSignature(offset)
+	writeImageSignature(signatureFile, offset)
 
-import subprocess
-subprocess.call(['', 'C:\\test.txt'])
+def prepare_signed_image(intelHexSourceFile):
+	start = os.path.join(mydir, "rsa_sign.exe " + outDirectory + '\\' + imageName + '.bin ' + mydir + '\\rsa_priv.txt')
 
-firstLine = intelHexSourceFile.readline()
-intelHexDestinationFile.write(firstLine)
+	win32api.WinExec(start)
 
-writeImageMetaData(codeOffset, codeSize, ramOffset, ramSize)
+	signatureFilePath = binaryOutFilePath + '.sig'
+	codeOffset = config.imageMetaDataHeader['codeOffset']
+	codeSize = config.imageMetaDataHeader['codeSize']
+	ramOffset = config.imageMetaDataHeader['ramOffset']
+	ramSize = config.imageMetaDataHeader['ramSize']
 
-otherLines = intelHexSourceFile.readlines()
+	while not os.path.exists(signatureFilePath):
+		time.sleep(0.05)
+	
+	signatureFile = open(signatureFilePath)
 
-for line in otherLines:
-	intelHexDestinationFile.write(line)
+	firstLine = intelHexSourceFile.readline()
+	intelHexDestinationFile.write(firstLine)
+
+	writeImageMetaData(signatureFile, codeOffset, codeSize, ramOffset, ramSize)
+
+	otherLines = intelHexSourceFile.readlines()
+
+	for line in otherLines:
+		intelHexDestinationFile.write(line)
+
+prepare_signed_image(intelHexSourceFile)
